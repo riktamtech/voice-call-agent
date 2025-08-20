@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI Candidate Screening</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .transcript-row.hidden,
+        #immediate-call-modal.hidden,
+        #schedule-call-modal.hidden {
+            display: none;
+        }
+        .call-status {
+            transition: all 0.3s ease-in-out;
+        }
+    </style>
+</head>
+<body class="bg-gray-50 text-gray-800">
+
+    <div class="container mx-auto p-4 sm:p-6 lg:p-8">
+        <header class="mb-8 flex justify-between items-center">
+            <div>
+                <h1 class="text-3xl font-bold text-gray-900">AI Candidate Screening</h1>
+                <p class="text-gray-600 mt-1">Select candidates, provide conversation instructions, and view call transcripts.</p>
+            </div>
+            <div class="flex space-x-2">
+                 <button id="open-schedule-modal-btn" class="text-white bg-green-600 hover:bg-green-700 focus:ring-4 focus:outline-none focus:ring-green-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                    Schedule Calls
+                </button>
+                <button id="open-immediate-call-modal-btn" class="text-white bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center">
+                    Place Immediate Calls
+                </button>
+            </div>
+        </header>
+
+        <div class="bg-white p-6 rounded-xl shadow-md">
+            <h2 class="text-xl font-semibold mb-4">Candidates</h2>
+            <div class="overflow-x-auto">
+                <table class="w-full text-sm text-left text-gray-500">
+                    <thead class="text-xs text-gray-700 uppercase bg-gray-50">
+                        <tr>
+                            <th scope="col" class="p-4">
+                                <div class="flex items-center">
+                                    <input id="checkbox-all" type="checkbox" class="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500">
+                                    <label for="checkbox-all" class="sr-only">checkbox</label>
+                                </div>
+                            </th>
+                            <th scope="col" class="px-6 py-3">Name</th>
+                            <th scope="col" class="px-6 py-3">Phone</th>
+                            <th scope="col" class="px-6 py-3">Call Status</th>
+                            <th scope="col" class="px-6 py-3">Screening Result</th>
+                            <th scope="col" class="px-6 py-3"></th>
+                        </tr>
+                    </thead>
+                    <tbody id="candidate-list">
+                        <!-- Candidate 1 -->
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <td class="w-4 p-4">
+                                <div class="flex items-center">
+                                    <input id="checkbox-table-1" type="checkbox" class="candidate-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" data-name="Priya Sharma" data-phone="+919876543210">
+                                    <label for="checkbox-table-1" class="sr-only">checkbox</label>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Priya Sharma</td>
+                            <td class="px-6 py-4">+91 98765 43210</td>
+                            <td class="px-6 py-4 call-status">Yet to Dial</td>
+                            <td class="px-6 py-4 screening-result"><span class="bg-gray-100 text-gray-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">N/A</span></td>
+                            <td class="px-6 py-4">
+                                <button class="view-transcript-btn font-medium text-blue-600 hover:underline" disabled>View Transcript</button>
+                            </td>
+                        </tr>
+                        <tr class="transcript-row hidden bg-gray-50 border-b">
+                            <td colspan="6" class="p-4">
+                                <h4 class="font-semibold text-sm mb-2">Call Transcript:</h4>
+                                <pre class="transcript-content text-xs text-gray-600 whitespace-pre-wrap p-4 bg-white rounded-md">No transcript available.</pre>
+                            </td>
+                        </tr>
+
+                        <!-- Candidate 2 -->
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <td class="w-4 p-4">
+                                <div class="flex items-center">
+                                    <input id="checkbox-table-2" type="checkbox" class="candidate-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" data-name="Rohan Kumar" data-phone="+919123456789">
+                                    <label for="checkbox-table-2" class="sr-only">checkbox</label>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Rohan Kumar</td>
+                            <td class="px-6 py-4">+91 91234 56789</td>
+                            <td class="px-6 py-4 call-status">Yet to Dial</td>
+                            <td class="px-6 py-4 screening-result"><span class="bg-gray-100 text-gray-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">N/A</span></td>
+                             <td class="px-6 py-4">
+                                <button class="view-transcript-btn font-medium text-blue-600 hover:underline" disabled>View Transcript</button>
+                            </td>
+                        </tr>
+                         <tr class="transcript-row hidden bg-gray-50 border-b">
+                            <td colspan="6" class="p-4">
+                                <h4 class="font-semibold text-sm mb-2">Call Transcript:</h4>
+                                <pre class="transcript-content text-xs text-gray-600 whitespace-pre-wrap p-4 bg-white rounded-md">No transcript available.</pre>
+                            </td>
+                        </tr>
+
+                        <!-- Candidate 3 -->
+                        <tr class="bg-white border-b hover:bg-gray-50">
+                            <td class="w-4 p-4">
+                                <div class="flex items-center">
+                                    <input id="checkbox-table-3" type="checkbox" class="candidate-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" data-name="Aarav Patel" data-phone="+918765432109">
+                                    <label for="checkbox-table-3" class="sr-only">checkbox</label>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Aarav Patel</td>
+                            <td class="px-6 py-4">+91 87654 32109</td>
+                            <td class="px-6 py-4 call-status">Yet to Dial</td>
+                            <td class="px-6 py-4 screening-result"><span class="bg-gray-100 text-gray-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">N/A</span></td>
+                             <td class="px-6 py-4">
+                                <button class="view-transcript-btn font-medium text-blue-600 hover:underline" disabled>View Transcript</button>
+                            </td>
+                        </tr>
+                         <tr class="transcript-row hidden bg-gray-50 border-b">
+                            <td colspan="6" class="p-4">
+                                <h4 class="font-semibold text-sm mb-2">Call Transcript:</h4>
+                                <pre class="transcript-content text-xs text-gray-600 whitespace-pre-wrap p-4 bg-white rounded-md">No transcript available.</pre>
+                            </td>
+                        </tr>
+
+                         <!-- Candidate 4 -->
+                         <tr class="bg-white hover:bg-gray-50">
+                            <td class="w-4 p-4">
+                                <div class="flex items-center">
+                                    <input id="checkbox-table-4" type="checkbox" class="candidate-checkbox w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded focus:ring-blue-500" data-name="Sneha Gupta" data-phone="+917654321098">
+                                    <label for="checkbox-table-4" class="sr-only">checkbox</label>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 font-medium text-gray-900 whitespace-nowrap">Sneha Gupta</td>
+                            <td class="px-6 py-4">+91 76543 21098</td>
+                            <td class="px-6 py-4 call-status">Yet to Dial</td>
+                            <td class="px-6 py-4 screening-result"><span class="bg-gray-100 text-gray-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">N/A</span></td>
+                            <td class="px-6 py-4">
+                                <button class="view-transcript-btn font-medium text-blue-600 hover:underline" disabled>View Transcript</button>
+                            </td>
+                        </tr>
+                        <tr class="transcript-row hidden bg-gray-50 border-b">
+                            <td colspan="6" class="p-4">
+                                <h4 class="font-semibold text-sm mb-2">Call Transcript:</h4>
+                                <pre class="transcript-content text-xs text-gray-600 whitespace-pre-wrap p-4 bg-white rounded-md">No transcript available.</pre>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Immediate Call Modal -->
+    <div id="immediate-call-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+        <div class="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">AI Conversation Instructions</h3>
+                <div class="mt-2 px-7 py-3">
+                    <textarea id="ai-instructions-immediate" rows="8" class="block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 'Confirm they are still interested in the Software Engineer role...'"></textarea>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="confirm-immediate-calls-btn" class="px-4 py-2 bg-blue-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500">
+                        Confirm & Place Calls Now
+                    </button>
+                    <button id="close-immediate-modal-btn" class="mt-3 px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <!-- Schedule Call Modal -->
+    <div id="schedule-call-modal" class="hidden fixed inset-0 bg-gray-600 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center">
+        <div class="relative mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+            <div class="mt-3 text-center">
+                <h3 class="text-lg leading-6 font-medium text-gray-900">Schedule Screening Calls</h3>
+                <div class="mt-4 px-7 py-3 space-y-4">
+                     <div>
+                        <label for="schedule-date" class="block text-sm font-medium text-gray-700 text-left">Date</label>
+                        <input type="date" id="schedule-date" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="schedule-time" class="block text-sm font-medium text-gray-700 text-left">Time</label>
+                        <input type="time" id="schedule-time" class="mt-1 block w-full p-2 border border-gray-300 rounded-md shadow-sm focus:ring-blue-500 focus:border-blue-500">
+                    </div>
+                    <div>
+                        <label for="ai-instructions-schedule" class="block text-sm font-medium text-gray-700 text-left">AI Conversation Instructions</label>
+                        <textarea id="ai-instructions-schedule" rows="5" class="mt-1 block p-2.5 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500" placeholder="e.g., 'Confirm they are still interested in the Software Engineer role...'"></textarea>
+                    </div>
+                </div>
+                <div class="items-center px-4 py-3">
+                    <button id="confirm-schedule-calls-btn" class="px-4 py-2 bg-green-600 text-white text-base font-medium rounded-md w-full shadow-sm hover:bg-green-700 focus:outline-none focus:ring-2 focus:ring-green-500">
+                        Confirm & Schedule Calls
+                    </button>
+                    <button id="close-schedule-modal-btn" class="mt-3 px-4 py-2 bg-gray-200 text-gray-800 text-base font-medium rounded-md w-full shadow-sm hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-300">
+                        Cancel
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Message Box -->
+    <div id="message-box" class="fixed bottom-5 right-5 bg-green-500 text-white py-2 px-4 rounded-lg shadow-lg hidden">
+        <p id="message-text"></p>
+    </div>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', () => {
+            // --- Element References ---
+            const candidateList = document.getElementById('candidate-list');
+            const selectAllCheckbox = document.getElementById('checkbox-all');
+            const messageBox = document.getElementById('message-box');
+            const messageText = document.getElementById('message-text');
+            
+            // Immediate Call Modal
+            const openImmediateCallModalBtn = document.getElementById('open-immediate-call-modal-btn');
+            const immediateCallModal = document.getElementById('immediate-call-modal');
+            const closeImmediateModalBtn = document.getElementById('close-immediate-modal-btn');
+            const confirmImmediateCallsBtn = document.getElementById('confirm-immediate-calls-btn');
+            const aiInstructionsImmediate = document.getElementById('ai-instructions-immediate');
+            
+            // Schedule Call Modal
+            const openScheduleModalBtn = document.getElementById('open-schedule-modal-btn');
+            const scheduleCallModal = document.getElementById('schedule-call-modal');
+            const closeScheduleModalBtn = document.getElementById('close-schedule-modal-btn');
+            const confirmScheduleCallsBtn = document.getElementById('confirm-schedule-calls-btn');
+            const scheduleDateInput = document.getElementById('schedule-date');
+            const scheduleTimeInput = document.getElementById('schedule-time');
+            const aiInstructionsSchedule = document.getElementById('ai-instructions-schedule');
+
+            // --- Mock Data ---
+            const getMockTranscript = (candidateName, isQualified) => {
+                if (isQualified) {
+                    return `AI: Namaste, may I speak with ${candidateName}?\nCandidate: Ji, main bol raha/rahi hoon.\nAI: Hi ${candidateName}, my name is Alex and I'm an AI assistant calling from Acme Inc. regarding your application for the Senior Developer position. Do you have a few minutes to talk?\nCandidate: Yes, I have time.\nAI: Great. The instructions I have are to ask about your experience with cloud platforms like AWS or Azure. Can you tell me about that?\nCandidate: I have extensive experience with AWS, particularly with EC2, S3, and Lambda. I've used it to deploy and manage several production applications.\nAI: That's excellent. And what are your salary expectations for this position?\nCandidate: I'm looking for a base salary around ₹18,00,000 per annum, but it's negotiable based on the overall compensation package.\nAI: Thank you, ${candidateName}. That's all for now. A recruiter will be in touch with you about the next steps. Have a great day.\nCandidate: Dhanyavaad.`;
+                } else {
+                    return `AI: Namaste, may I speak with ${candidateName}?\nCandidate: Ji, boliye.\nAI: Hi ${candidateName}, my name is Alex and I'm an AI assistant calling from Acme Inc. regarding your application for the Senior Developer position. Is now a good time to talk?\nCandidate: Sure.\nAI: Great. The job requires at least 5 years of professional experience with Python. Could you tell me about your experience?\nCandidate: I've mostly worked with Java. I've done a few small personal projects in Python but I don't have any professional experience with it.\nAI: I see. Thank you for clarifying. In that case, this role might not be the best fit at this time. We'll keep your resume on file for future opportunities.\nCandidate: Okay, thank you.\nAI: You're welcome. Have a good day.`;
+                }
+            };
+
+            // --- Helper Functions ---
+            const getSelectedCandidates = () => {
+                const selected = [];
+                const candidateCheckboxes = document.querySelectorAll('.candidate-checkbox:checked');
+                candidateCheckboxes.forEach(checkbox => {
+                    const row = checkbox.closest('tr');
+                    selected.push({
+                        name: checkbox.getAttribute('data-name'),
+                        phone: checkbox.getAttribute('data-phone'),
+                        row: row
+                    });
+                });
+                return selected;
+            };
+
+            const showMessage = (message, type = 'success') => {
+                messageText.textContent = message;
+                messageBox.className = 'fixed bottom-5 right-5 text-white py-2 px-4 rounded-lg shadow-lg';
+                if (type === 'error') {
+                    messageBox.classList.add('bg-red-500');
+                } else {
+                    messageBox.classList.add('bg-green-500');
+                }
+                messageBox.classList.remove('hidden');
+                setTimeout(() => {
+                    messageBox.classList.add('hidden');
+                }, 3000);
+            };
+
+            // --- Event Listeners ---
+            
+            // Modal Open/Close
+            openImmediateCallModalBtn.addEventListener('click', () => immediateCallModal.classList.remove('hidden'));
+            closeImmediateModalBtn.addEventListener('click', () => immediateCallModal.classList.add('hidden'));
+            openScheduleModalBtn.addEventListener('click', () => scheduleCallModal.classList.remove('hidden'));
+            closeScheduleModalBtn.addEventListener('click', () => scheduleCallModal.classList.add('hidden'));
+            
+            window.addEventListener('click', (event) => {
+                if (event.target === immediateCallModal) immediateCallModal.classList.add('hidden');
+                if (event.target === scheduleCallModal) scheduleCallModal.classList.add('hidden');
+            });
+
+            // Select All Checkbox
+            selectAllCheckbox.addEventListener('change', (event) => {
+                document.querySelectorAll('.candidate-checkbox').forEach(checkbox => {
+                    checkbox.checked = event.target.checked;
+                });
+            });
+
+            // View Transcript
+            candidateList.addEventListener('click', (event) => {
+                if (event.target.classList.contains('view-transcript-btn') && !event.target.disabled) {
+                    const button = event.target;
+                    const transcriptRow = button.closest('tr').nextElementSibling;
+                    transcriptRow.classList.toggle('hidden');
+                    button.textContent = transcriptRow.classList.contains('hidden') ? 'View Transcript' : 'Hide Transcript';
+                }
+            });
+
+            // Confirm Immediate Calls
+            confirmImmediateCallsBtn.addEventListener('click', () => {
+                const selectedCandidates = getSelectedCandidates();
+                const instructions = aiInstructionsImmediate.value;
+
+                if (selectedCandidates.length === 0) {
+                    showMessage('Please select at least one candidate.', 'error');
+                    return;
+                }
+                if (!instructions.trim()) {
+                    showMessage('Please provide AI conversation instructions.', 'error');
+                    return;
+                }
+                
+                immediateCallModal.classList.add('hidden');
+                showMessage(`Initiating calls for ${selectedCandidates.length} candidate(s)...`, 'success');
+                
+                selectedCandidates.forEach((candidate, index) => {
+                    const callStatusCell = candidate.row.querySelector('.call-status');
+                    const screeningResultCell = candidate.row.querySelector('.screening-result');
+                    const viewTranscriptBtn = candidate.row.querySelector('.view-transcript-btn');
+                    const transcriptContent = candidate.row.nextElementSibling.querySelector('.transcript-content');
+
+                    callStatusCell.textContent = 'Dialing...';
+                    screeningResultCell.innerHTML = `<span class="bg-gray-100 text-gray-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">N/A</span>`;
+                    viewTranscriptBtn.disabled = true;
+                    transcriptContent.textContent = 'No transcript available.';
+
+                    setTimeout(() => {
+                        const outcomes = ['Completed', 'No Answer', 'Busy', 'Failed'];
+                        const randomOutcome = outcomes[Math.floor(Math.random() * outcomes.length)];
+                        callStatusCell.textContent = randomOutcome;
+
+                        if (randomOutcome === 'Completed') {
+                            const isQualified = Math.random() > 0.5;
+                            screeningResultCell.innerHTML = `<span class="bg-${isQualified ? 'green' : 'red'}-100 text-${isQualified ? 'green' : 'red'}-800 text-xs font-medium mr-2 px-2.5 py-0.5 rounded-full">${isQualified ? 'Qualified' : 'Not a Fit'}</span>`;
+                            transcriptContent.textContent = getMockTranscript(candidate.name, isQualified);
+                            viewTranscriptBtn.disabled = false;
+                        } else {
+                             transcriptContent.textContent = `Call could not be completed. Status: ${randomOutcome}.`;
+                        }
+                    }, 2000 + (index * 500));
+                });
+            });
+            
+            // Confirm Scheduled Calls
+            confirmScheduleCallsBtn.addEventListener('click', () => {
+                const selectedCandidates = getSelectedCandidates();
+                const instructions = aiInstructionsSchedule.value;
+                const date = scheduleDateInput.value;
+                const time = scheduleTimeInput.value;
+
+                if (selectedCandidates.length === 0) {
+                    showMessage('Please select at least one candidate.', 'error');
+                    return;
+                }
+                 if (!date || !time) {
+                    showMessage('Please select a valid date and time.', 'error');
+                    return;
+                }
+                if (!instructions.trim()) {
+                    showMessage('Please provide AI conversation instructions.', 'error');
+                    return;
+                }
+
+                const scheduledDateTime = new Date(`${date}T${time}`);
+                const formattedDateTime = scheduledDateTime.toLocaleString('en-IN', {
+                    day: 'numeric', month: 'short', hour: 'numeric', minute: 'numeric', hour12: true
+                });
+                
+                scheduleCallModal.classList.add('hidden');
+                showMessage(`Calls scheduled for ${selectedCandidates.length} candidate(s).`, 'success');
+
+                selectedCandidates.forEach(candidate => {
+                    const callStatusCell = candidate.row.querySelector('.call-status');
+                    callStatusCell.innerHTML = `<span class="text-gray-700">Scheduled: ${formattedDateTime}</span>`;
+                });
+            });
+        });
+    </script>
+
+</body>
+</html>
