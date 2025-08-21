@@ -35,7 +35,7 @@ jobs:
               with:
                   name: build-files
                   path: |
-                      build
+                      dist
                       .github/scripts/deploy.sh
 
     deploy:
