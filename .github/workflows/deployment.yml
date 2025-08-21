@@ -59,6 +59,9 @@ jobs:
                   eval "$(ssh-agent -s)"
                   ssh-add ~/.ssh/id_rsa
 
+            - name: Debug SSH
+              run: ssh -v -i ~/.ssh/id_rsa ubuntu@54.172.69.143 "echo connected"
+
             - name: Run deployment script
               run: |
                   chmod +x .github/scripts/deploy.sh
