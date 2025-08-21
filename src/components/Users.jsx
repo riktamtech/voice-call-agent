@@ -3,154 +3,112 @@ import axios from "axios";
 import { AiOutlineFileText } from "react-icons/ai";
 import { FiPhone } from "react-icons/fi";
 import { RiQuestionAnswerLine } from "react-icons/ri";
-import { toast } from "react-toastify";
+import { AiOutlineUserAdd, AiOutlineSchedule, AiOutlinePhone } from "react-icons/ai";
 
+import { toast } from "react-toastify";
+const URL = import.meta.env.VITE_API_URL;
 const Users = () => {
+	const [loading, setLoading] = useState(false);
+
 	const [showImmediateModal, setShowImmediateModal] = useState(false);
 	const [showScheduleModal, setShowScheduleModal] = useState(false);
-	const [conversationInstructions, setConversationInstructions] = useState("");
-	const [loading, setLoading] = useState(false);
-	const [transcriptModal, setTranscriptModal] = useState(null); // candidate object for transcript
-	const [candidates, setCandidates] = useState([]);
 	const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
+	const [selectedIds, setSelectedIds] = useState([]);
 
-	// New candidate form state
+	const [transcriptModal, setTranscriptModal] = useState(null);
+	const [instructionsModal, setInstructionsModal] = useState(null);
+	const [candidates, setCandidates] = useState([]);
+
 	const [newCandidateName, setNewCandidateName] = useState("");
 	const [newCandidatePhone, setNewCandidatePhone] = useState("");
-	const [newCandidateQuestions, setNewCandidateQuestions] = useState([""]); // array of strings
-	const [aiInstructionsSchedule, setAiInstructionsSchedule] = useState("");
+	const [newCandidateInstruction, setCandidateInstruction] = useState("");
 
+	// Fetch candidates
+	const fetchUsers = async () => {
+		try {
+			let route = URL + "/users";
+			const res = await axios.get(route);
+			const users = res.data.map((u) => ({
+				id: u.user_id,
+				name: u.name,
+				phone: u.phone,
+				instruction: u.instruction,
+				transcription: u.transcription,
+				call_status: u.call_status,
+			}));
+			setCandidates(users);
+		} catch (error) {
+			console.error("Error fetching users:", error);
+		}
+	};
 	useEffect(() => {
-		const fetchUsers = async () => {
-			try {
-				const res = await axios.get("http://0.0.0.0:3000/api/users");
-				const users = res.data.map((u) => ({
-					id: u.user_id,
-					name: u.name,
-					phone: u.destination_number,
-					selected: false,
-					transcript: "",
-					callStatus: false,
-					questions: [], // initialize questions
-				}));
-				setCandidates(users);
-			} catch (error) {
-				console.error("Error fetching users:", error);
-			}
-		};
-
 		fetchUsers();
 	}, []);
 
 	const handleCheckboxChange = (id) => {
-		setCandidates((prev) => prev.map((c) => (c.id === id ? { ...c, selected: !c.selected } : c)));
+		setSelectedIds((prev) => (prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]));
 	};
 
-	const placeCallsNow = async () => {
-		const selectedCandidates = candidates.filter((c) => c.selected);
-
-		if (selectedCandidates.length === 0) {
-			alert("Please select at least one candidate!");
-			return;
-		}
-		if (!conversationInstructions.trim()) {
-			alert("Please provide conversation instructions!");
-			return;
-		}
-
+	const call = async (candidate) => {
 		try {
 			setLoading(true);
-
-			await Promise.all(
-				selectedCandidates.map((c) =>
-					axios.post("http://0.0.0.0:3000/api/start-call", {
-						user_id: c.id,
-					})
-				)
-			);
-
-			alert("Calls placed successfully!");
-
-			setCandidates((prev) =>
-				prev.map((c) =>
-					c.selected ? { ...c, callStatus: true, transcript: "Transcript will appear here..." } : c
-				)
-			);
-
-			setShowImmediateModal(false);
-			setConversationInstructions(""); // reset
-		} catch (error) {
-			console.error("Error placing calls:", error);
-			alert("Failed to place calls. Please try again.");
-		} finally {
-			setLoading(false);
-		}
-	};
-
-	const placeSingleCall = async (candidate) => {
-		try {
-			setLoading(true);
-			await axios.post("http://0.0.0.0:3000/api/start-call", {
+			let route = URL + "/start-call";
+			await axios.post(route, {
 				user_id: candidate.id,
 			});
 
-			alert(`Call placed successfully to ${candidate.name}!`);
-
-			setCandidates((prev) =>
-				prev.map((c) =>
-					c.id === candidate.id
-						? { ...c, callStatus: true, transcript: "Transcript will appear here..." }
-						: c
-				)
-			);
+			toast.success(`Call initated successfully to ${candidate.name}!`);
 		} catch (error) {
 			console.error("Error placing call:", error);
-			alert("Failed to place call. Please try again.");
+			toast.error("Failed to place call. Please try again.");
 		} finally {
 			setLoading(false);
 		}
 	};
 
-	const openTranscript = (candidate) => {
-		setTranscriptModal(candidate);
-	};
+	const openTranscript = (candidate) => setTranscriptModal(candidate);
+	const openInstructions = (candidate) => setInstructionsModal(candidate);
 
-	const handleAddQuestionChange = (index, value) => {
-		const updatedQuestions = [...newCandidateQuestions];
-		updatedQuestions[index] = value;
-		setNewCandidateQuestions(updatedQuestions);
-	};
+	const handleAddCandidate = async () => {
+		try {
+			if (!newCandidateName || !newCandidatePhone) {
+				toast.error("Name and phone are required!");
+				return;
+			}
 
-	const addQuestionField = () => {
-		setNewCandidateQuestions([...newCandidateQuestions, ""]);
-	};
+			if (newCandidatePhone.length !== 10) {
+				toast.error("Enter 10 digit valid phone number");
+				return;
+			}
 
-	const removeQuestionField = (index) => {
-		setNewCandidateQuestions(newCandidateQuestions.filter((_, i) => i !== index));
-	};
+			const data = {
+				name: newCandidateName,
+				phone: newCandidatePhone,
+				instruction: newCandidateInstruction,
+			};
 
-	const handleAddCandidate = () => {
-		if (!newCandidateName || !newCandidatePhone) {
-			alert("Name and phone are required!");
-			return;
+			setLoading(true);
+			const route = URL + "/create-user";
+			const result = await axios.post(route, data);
+
+			if (result.status === 201) {
+				// ✅ Only close modal if success
+				await fetchUsers();
+				toast.success(`User Added`);
+
+				setShowAddCandidateModal(false);
+				setNewCandidateName("");
+				setNewCandidatePhone("");
+				setCandidateInstruction("");
+			} else {
+				toast.error("Unable to create the user");
+			}
+		} catch (error) {
+			console.error("Error creating user:", error);
+			toast.error("Unable to create the user");
+		} finally {
+			setLoading(false);
 		}
-
-		const newCandidate = {
-			id: Date.now(), // simple unique id
-			name: newCandidateName,
-			phone: newCandidatePhone,
-			selected: false,
-			transcript: "",
-			callStatus: false,
-			questions: newCandidateQuestions.filter((q) => q.trim() !== "") || [],
-			aiInstructionsSchedule,
-		};
-
-		setCandidates((prev) => [...prev, newCandidate]);
-		setShowAddCandidateModal(false);
-		setNewCandidateName("");
-		setNewCandidatePhone("");
-		setNewCandidateQuestions([""]);
 	};
 
 	return (
@@ -159,29 +117,37 @@ const Users = () => {
 				<header className="mb-8 flex justify-between items-center">
 					<div>
 						<h1 className="text-3xl font-bold text-gray-900">
-							AI Candidate Screening @Zinterview.ai
+							AI Candidate Screening via Voice Call
 						</h1>
 						<p className="text-gray-600 mt-1">
 							Select candidates, provide conversation instructions, and view call transcripts.
 						</p>
 					</div>
 					<div className="flex space-x-2">
+						{/* Add Candidate */}
 						<button
 							onClick={() => setShowAddCandidateModal(true)}
-							className="text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5"
+							className="flex items-center gap-2 text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5"
 						>
+							<AiOutlineUserAdd size={18} />
 							Add Candidate
 						</button>
+
+						{/* Schedule Calls */}
 						<button
 							onClick={() => setShowScheduleModal(true)}
-							className="text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-5 py-2.5"
+							className="flex items-center gap-2 text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-5 py-2.5"
 						>
+							<AiOutlineSchedule size={18} />
 							Schedule Calls
 						</button>
+
+						{/* Place Immediate Calls */}
 						<button
 							onClick={() => setShowImmediateModal(true)}
-							className="text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-2.5"
+							className="flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-2.5"
 						>
+							<AiOutlinePhone size={18} />
 							Place Immediate Calls
 						</button>
 					</div>
@@ -207,7 +173,7 @@ const Users = () => {
 										<td className="w-4 p-4">
 											<input
 												type="checkbox"
-												checked={c.selected}
+												checked={selectedIds.includes(c.id)}
 												onChange={() => handleCheckboxChange(c.id)}
 												className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded"
 											/>
@@ -216,30 +182,30 @@ const Users = () => {
 										<td className="px-6 py-4">{c.phone}</td>
 										<td className="px-6 py-4">
 											<span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-												{c.callStatus ? "Called" : "Not Called"}
+												{c.call_status}
 											</span>
 										</td>
 										<td className="px-6 py-4 flex gap-2">
 											<button
-												className="flex items-center gap-1 font-medium text-blue-600 hover:underline"
+												className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 shadow-md"
 												onClick={() => openTranscript(c)}
 											>
-												<AiOutlineFileText />
+												<AiOutlineFileText size={20} />
 											</button>
 
 											<button
-												className="flex items-center gap-1 font-medium text-green-600 hover:underline"
-												onClick={() => placeSingleCall(c)}
+												className="w-12 h-12 flex items-center justify-center rounded-full bg-green-100 text-green-600 hover:bg-green-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+												onClick={() => call(c)}
 												disabled={loading}
 											>
-												<FiPhone />
+												<FiPhone size={20} />
 											</button>
 
 											<button
-												className="flex items-center gap-1 font-medium text-purple-600 hover:underline"
-												onClick={() => openTranscript(c)} // or a separate function for questions
+												className="w-12 h-12 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 shadow-md"
+												onClick={() => openInstructions(c)}
 											>
-												<RiQuestionAnswerLine />
+												<RiQuestionAnswerLine size={20} />
 											</button>
 										</td>
 									</tr>
@@ -250,130 +216,85 @@ const Users = () => {
 				</div>
 			</div>
 
-			{/* Add Candidate Modal */}
+			{/* ================== Modals ================== */}
 			{showAddCandidateModal && (
-				<div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-					<div className="mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
-						<h3 className="text-lg font-medium text-gray-900 mb-4">Add New Candidate</h3>
-						<input
-							type="text"
-							placeholder="Name"
-							value={newCandidateName}
-							onChange={(e) => setNewCandidateName(e.target.value)}
-							className="block w-full p-2 mb-3 border rounded"
-						/>
-						<input
-							type="text"
-							placeholder="Phone Number"
-							value={newCandidatePhone}
-							onChange={(e) => setNewCandidatePhone(e.target.value)}
-							className="block w-full p-2 mb-3 border rounded"
-						/>
-
-						<h4 className="font-medium mb-2">AI Conversation Instructions</h4>
-						<textarea
-							value={aiInstructionsSchedule}
-							onChange={(e) => setAiInstructionsSchedule(e.target.value)}
-							id="ai-instructions-immediate"
-							rows="8"
-							className="block p-2.5 mt-2 mb-3 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
-							placeholder="e.g., 'Confirm they are still interested in the Software Engineer role...'"
-						></textarea>
-						{/* {newCandidateQuestions.map((q, i) => (
-							<div key={i} className="flex gap-2 mb-2">
-								<input
-									type="text"
-									value={q}
-									onChange={(e) => handleAddQuestionChange(i, e.target.value)}
-									className="flex-1 p-2 border rounded"
-									placeholder={`Question ${i + 1}`}
-								/>
-								<button
-									onClick={() => removeQuestionField(i)}
-									className="bg-red-500 text-white px-2 rounded hover:bg-red-600"
-								>
-									X
-								</button>
-							</div>
-						))} */}
-						{/* <button
-							onClick={addQuestionField}
-							className="mb-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
-						>
-							Add Question
-						</button> */}
-
-						<div className="flex justify-end gap-2">
-							<button
-								onClick={handleAddCandidate}
-								className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
-							>
-								Add
-							</button>
-							<button
-								onClick={() => setShowAddCandidateModal(false)}
-								className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
-							>
-								Cancel
-							</button>
-						</div>
-					</div>
-				</div>
+				<AddCandidateModal
+					isOpen={showAddCandidateModal}
+					onClose={() => setShowAddCandidateModal(false)}
+					newCandidateName={newCandidateName}
+					setNewCandidateName={setNewCandidateName}
+					newCandidatePhone={newCandidatePhone}
+					setNewCandidatePhone={setNewCandidatePhone}
+					newCandidateInstruction={newCandidateInstruction}
+					setCandidateInstruction={setCandidateInstruction}
+					handleAddCandidate={handleAddCandidate}
+				/>
 			)}
 
-			{/* Transcript / Questions Modal */}
 			{transcriptModal && (
-				<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-					<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-						<h3 className="text-xl font-bold mb-4">
-							{transcriptModal.callStatus ? "Transcript" : "Questions"}: {transcriptModal.name}
-						</h3>
-						<div className="text-gray-700 whitespace-pre-wrap">
-							{transcriptModal.callStatus
-								? transcriptModal.transcript || "Transcript not available yet."
-								: transcriptModal.questions.length > 0
-								? transcriptModal.questions.map((q, i) => (
-										<p key={i}>
-											{i + 1}. {q}
-										</p>
-								  ))
-								: "No questions added."}
-						</div>
-						<div className="mt-4 flex justify-end">
-							<button
-								onClick={() => setTranscriptModal(null)}
-								className="px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
-							>
-								Close
-							</button>
-						</div>
-					</div>
-				</div>
+				<TranscriptModal candidate={transcriptModal} onClose={() => setTranscriptModal(null)} />
+			)}
+
+			{instructionsModal && (
+				<ShowInstructionsModal
+					candidate={instructionsModal}
+					onClose={() => setInstructionsModal(null)}
+				/>
 			)}
 
 			{showScheduleModal && (
-				<ScheduleModal isOpen={showScheduleModal} onClose={() => setShowScheduleModal(false)} />
+				<ScheduleModal
+					isOpen={showScheduleModal}
+					selectedIds={selectedIds}
+					setShowScheduleModal={setShowScheduleModal}
+					onClose={() => setShowScheduleModal(false)}
+				/>
 			)}
 
 			{showImmediateModal && (
-				<ImmediateModal isOpen={showImmediateModal} onClose={() => setShowImmediateModal(false)} />
+				<ImmediateModal
+					isOpen={showImmediateModal}
+					selectedIds={selectedIds}
+					setShowImmediateModal={setShowImmediateModal}
+					onClose={() => setShowImmediateModal(false)}
+				/>
 			)}
 		</>
 	);
 };
 
-function ScheduleModal({ isOpen, onClose }) {
+// ================== Schedule Modal ==================
+const ScheduleModal = ({ isOpen, onClose, selectedIds, setShowScheduleModal }) => {
 	const [date, setDate] = useState("");
 	const [time, setTime] = useState("");
-	const [instructions, setInstructions] = useState("");
+	const [instruction, setInstruction] = useState("");
 
 	if (!isOpen) return null;
 
-	const onConfirm = () => {
+	const onConfirm = async () => {
+		if (selectedIds.length == 0) {
+			toast.error("Select at least one candidate");
+			return;
+		}
+		if (!date || !time) {
+			toast.error("Date and Time are required");
+			return;
+		}
 		try {
-			toast.success("Scheduled successfully!");
-		} catch (e) {
-			toast.error(e.message);
+			const schedule_time = new Date(`${date}T${time}:00`).toISOString();
+			await axios.post(URL + "/start-batch-call", {
+				user_ids: selectedIds,
+				instruction,
+				schedule_time,
+			});
+			toast.success("Batch call initiated!");
+			setDate("");
+			setTime("");
+			setInstruction("");
+			setShowScheduleModal(false);
+		} catch (err) {
+			console.error("Error placing call:", err);
+			toast.error("Failed to place call. Please try again.");
 		}
 	};
 
@@ -381,46 +302,33 @@ function ScheduleModal({ isOpen, onClose }) {
 		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
 			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
 				<h2 className="text-xl font-semibold mb-4 text-center">Schedule Screening Calls</h2>
-
 				<div className="mb-4">
-					<label className="block text-sm font-medium mb-1" htmlFor="date">
-						Date
-					</label>
+					<label className="block text-sm font-medium mb-1">Date</label>
 					<input
 						type="date"
-						id="date"
 						value={date}
 						onChange={(e) => setDate(e.target.value)}
 						className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
 					/>
 				</div>
-
 				<div className="mb-4">
-					<label className="block text-sm font-medium mb-1" htmlFor="time">
-						Time
-					</label>
+					<label className="block text-sm font-medium mb-1">Time</label>
 					<input
 						type="time"
-						id="time"
 						value={time}
 						onChange={(e) => setTime(e.target.value)}
 						className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
 					/>
 				</div>
-
 				<div className="mb-4">
-					<label className="block text-sm font-medium mb-1" htmlFor="instructions">
-						AI Conversation Instructions
-					</label>
+					<label className="block text-sm font-medium mb-1">AI Conversation Instructions</label>
 					<textarea
-						id="instructions"
-						value={instructions}
-						onChange={(e) => setInstructions(e.target.value)}
-						placeholder="e.g., 'Confirm they are still interested in the Software Engineer role...'"
+						value={instruction}
+						onChange={(e) => setInstruction(e.target.value)}
+						placeholder="e.g., 'Confirm interest...'"
 						className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-24 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
 					/>
 				</div>
-
 				<div className="flex justify-end space-x-2">
 					<button
 						onClick={onClose}
@@ -429,8 +337,8 @@ function ScheduleModal({ isOpen, onClose }) {
 						Cancel
 					</button>
 					<button
-						className="px-4 py-2 text-sm rounded-md bg-green-600 hover:bg-green-700 text-white"
 						onClick={onConfirm}
+						className="px-4 py-2 text-sm rounded-md bg-green-600 hover:bg-green-700 text-white"
 					>
 						Confirm & Schedule Calls
 					</button>
@@ -438,27 +346,38 @@ function ScheduleModal({ isOpen, onClose }) {
 			</div>
 		</div>
 	);
-}
+};
 
-const ImmediateModal = ({ isOpen, onClose }) => {
-	const [instructions, setInstructions] = useState("");
+// ================== Immediate Modal ==================
+const ImmediateModal = ({ isOpen, onClose, selectedIds, setShowImmediateModal }) => {
+	const [instruction, setInstruction] = useState("");
 	if (!isOpen) return null;
-	const onConfirm = () => {
+
+	const onConfirm = async () => {
+		if (selectedIds.length == 0) {
+			toast.error("Select at least one candidate");
+			return;
+		}
 		try {
-			toast.success("Scheduled successfully!");
-		} catch (e) {
-			toast.error(e.message);
+			await axios.post(URL + "/start-batch-call", { user_ids: selectedIds, instruction });
+			toast.success("Batch call initiated!");
+			setInstruction("");
+			setShowImmediateModal(false);
+		} catch (err) {
+			console.error("Error placing call:", err);
+			toast.error("Failed to place call. Please try again.");
 		}
 	};
+
 	return (
 		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
 			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
 				<h2 className="text-xl font-semibold mb-4 text-center">AI Conversation Instructions</h2>
 				<textarea
-					value={instructions}
-					onChange={(e) => setInstructions(e.target.value)}
+					value={instruction}
+					onChange={(e) => setInstruction(e.target.value)}
 					className="w-full h-32 border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md p-2 mb-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-					placeholder="e.g., 'Confirm they are still interested in the Software Engineer role...'"
+					placeholder="e.g., 'Confirm interest...'"
 				/>
 				<div className="flex justify-end space-x-2">
 					<button
@@ -469,9 +388,115 @@ const ImmediateModal = ({ isOpen, onClose }) => {
 					</button>
 					<button
 						onClick={onConfirm}
-						className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+						className="px-4 py-2 text-sm rounded-md bg-green-600 hover:bg-green-700 text-white"
 					>
 						Confirm & Place Calls Now
+					</button>
+				</div>
+			</div>
+		</div>
+	);
+};
+
+// ================== Transcript Modal ==================
+const TranscriptModal = ({ candidate, onClose }) => (
+	<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+		<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto">
+			<h3 className="text-xl font-bold mb-4">Transcript</h3>
+			<div className="text-gray-700 whitespace-pre-wrap">
+				{candidate.transcription.length === 0 ? (
+					<p>No transcription available.</p>
+				) : (
+					candidate.transcription.map((t, idx) => (
+						<p key={idx}>
+							<strong>{t.role === "assistant" ? "AI" : "Candidate"}:</strong> {t.content}
+						</p>
+					))
+				)}
+			</div>
+			<div className="mt-4 flex justify-end">
+				<button
+					onClick={onClose}
+					className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+				>
+					Close
+				</button>
+			</div>
+		</div>
+	</div>
+);
+
+const ShowInstructionsModal = ({ candidate, onClose }) => (
+	<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+		<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+			<h3 className="text-xl font-bold mb-4">Instructions</h3>
+			<div className="text-gray-700 whitespace-pre-wrap">{candidate.instruction}</div>
+			<div className="mt-4 flex justify-end">
+				<button
+					onClick={onClose}
+					className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+				>
+					Close
+				</button>
+			</div>
+		</div>
+	</div>
+);
+
+// ================== Add Candidate Modal ==================
+const AddCandidateModal = ({
+	isOpen,
+	onClose,
+	newCandidateName,
+	setNewCandidateName,
+	newCandidatePhone,
+	setNewCandidatePhone,
+	newCandidateInstruction,
+	setCandidateInstruction,
+	handleAddCandidate,
+}) => {
+	if (!isOpen) return null;
+	return (
+		<div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
+			<div className="mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
+				<h3 className="text-lg font-medium text-gray-900 mb-4">Add New Candidate</h3>
+				<input
+					type="text"
+					placeholder="Name"
+					value={newCandidateName}
+					onChange={(e) => setNewCandidateName(e.target.value)}
+					className="block w-full p-2 mb-3 border rounded"
+				/>
+				<div className="flex items-center border rounded-lg overflow-hidden mb-3 w-full">
+					<span className="px-3 py-2 bg-gray-100 text-gray-700 border-r text-sm">+91</span>
+					<input
+						type="text"
+						placeholder="Phone Number"
+						value={newCandidatePhone}
+						onChange={(e) => setNewCandidatePhone(e.target.value)}
+						className="flex-1 px-3 py-2 focus:outline-none text-sm"
+					/>
+				</div>
+				<h4 className="font-medium mb-2">AI Conversation Instructions</h4>
+				<textarea
+					value={newCandidateInstruction}
+					onChange={(e) => setCandidateInstruction(e.target.value)}
+					rows="8"
+					className="block p-2.5 mt-2 mb-3 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
+					placeholder="e.g., 'Confirm interest in the role...'"
+				></textarea>
+				<div className="flex justify-end gap-2">
+					<button
+						onClick={onClose}
+						className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+					>
+						Cancel
+					</button>
+					<button
+						onClick={handleAddCandidate}
+						className="px-4 py-2 text-sm rounded-md bg-green-600 hover:bg-green-700 text-white"
+					>
+						Add Candidate
 					</button>
 				</div>
 			</div>
