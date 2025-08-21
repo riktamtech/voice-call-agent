@@ -1,5 +1,10 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import axios from "axios";
+import { AiOutlineFileText } from "react-icons/ai";
+import { FiPhone } from "react-icons/fi";
+import { RiQuestionAnswerLine } from "react-icons/ri";
+
+
 
 const Users = () => {
   const [showImmediateModal, setShowImmediateModal] = useState(false);
@@ -7,27 +12,35 @@ const Users = () => {
   const [conversationInstructions, setConversationInstructions] = useState("");
   const [loading, setLoading] = useState(false);
   const [transcriptModal, setTranscriptModal] = useState(null); // candidate object for transcript
+  const [candidates, setCandidates] = useState([]);
+  const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
 
-  const candidatesData = [
-    {
-      id: 1,
-      name: "Shreshth Bansal",
-      phone: "+918126478265",
-      selected: false,
-      transcript: "",
-      callStatus: false,
-    },
-    {
-      id: 2,
-      name: "Garv Bansal",
-      phone: "+918439133006",
-      selected: false,
-      transcript: "",
-      callStatus: false,
-    },
-  ];
+  // New candidate form state
+  const [newCandidateName, setNewCandidateName] = useState("");
+  const [newCandidatePhone, setNewCandidatePhone] = useState("");
+  const [newCandidateQuestions, setNewCandidateQuestions] = useState([""]); // array of strings
 
-  const [candidates, setCandidates] = useState(candidatesData);
+  useEffect(() => {
+    const fetchUsers = async () => {
+      try {
+        const res = await axios.get("http://0.0.0.0:3000/api/users");
+        const users = res.data.map((u) => ({
+          id: u.user_id,
+          name: u.name,
+          phone: u.destination_number,
+          selected: false,
+          transcript: "",
+          callStatus: false,
+          questions: [], // initialize questions
+        }));
+        setCandidates(users);
+      } catch (error) {
+        console.error("Error fetching users:", error);
+      }
+    };
+
+    fetchUsers();
+  }, []);
 
   const handleCheckboxChange = (id) => {
     setCandidates((prev) =>
@@ -52,19 +65,19 @@ const Users = () => {
 
       await Promise.all(
         selectedCandidates.map((c) =>
-          axios.post("https://voice-call-api.zinterview.ai/api/start-call", {
-            destination_number: c.phone,
-            instructions: conversationInstructions, // ✅ send instructions
+          axios.post("http://0.0.0.0:3000/api/start-call", {
+            user_id: c.id,
           })
         )
       );
 
       alert("Calls placed successfully!");
 
-      // Update callStatus
       setCandidates((prev) =>
         prev.map((c) =>
-          c.selected ? { ...c, callStatus: true, transcript: "Transcript will appear here..." } : c
+          c.selected
+            ? { ...c, callStatus: true, transcript: "Transcript will appear here..." }
+            : c
         )
       );
 
@@ -78,10 +91,69 @@ const Users = () => {
     }
   };
 
+  const placeSingleCall = async (candidate) => {
+    try {
+      setLoading(true);
+      await axios.post("http://0.0.0.0:3000/api/start-call", {
+        user_id: candidate.id,
+      });
+
+      alert(`Call placed successfully to ${candidate.name}!`);
+
+      setCandidates((prev) =>
+        prev.map((c) =>
+          c.id === candidate.id
+            ? { ...c, callStatus: true, transcript: "Transcript will appear here..." }
+            : c
+        )
+      );
+    } catch (error) {
+      console.error("Error placing call:", error);
+      alert("Failed to place call. Please try again.");
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const openTranscript = (candidate) => {
-    // here you’d fetch transcript from API if available
-    // axios.get(`/api/transcript/${candidate.id}`)...
     setTranscriptModal(candidate);
+  };
+
+  const handleAddQuestionChange = (index, value) => {
+    const updatedQuestions = [...newCandidateQuestions];
+    updatedQuestions[index] = value;
+    setNewCandidateQuestions(updatedQuestions);
+  };
+
+  const addQuestionField = () => {
+    setNewCandidateQuestions([...newCandidateQuestions, ""]);
+  };
+
+  const removeQuestionField = (index) => {
+    setNewCandidateQuestions(newCandidateQuestions.filter((_, i) => i !== index));
+  };
+
+  const handleAddCandidate = () => {
+    if (!newCandidateName || !newCandidatePhone) {
+      alert("Name and phone are required!");
+      return;
+    }
+
+    const newCandidate = {
+      id: Date.now(), // simple unique id
+      name: newCandidateName,
+      phone: newCandidatePhone,
+      selected: false,
+      transcript: "",
+      callStatus: false,
+      questions: newCandidateQuestions.filter((q) => q.trim() !== ""),
+    };
+
+    setCandidates((prev) => [...prev, newCandidate]);
+    setShowAddCandidateModal(false);
+    setNewCandidateName("");
+    setNewCandidatePhone("");
+    setNewCandidateQuestions([""]);
   };
 
   return (
@@ -97,6 +169,12 @@ const Users = () => {
             </p>
           </div>
           <div className="flex space-x-2">
+            <button
+              onClick={() => setShowAddCandidateModal(true)}
+              className="text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5"
+            >
+              Add Candidate
+            </button>
             <button
               onClick={() => setShowScheduleModal(true)}
               className="text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-5 py-2.5"
@@ -120,11 +198,10 @@ const Users = () => {
               <thead className="text-xs text-gray-700 uppercase bg-gray-50">
                 <tr>
                   <th className="p-4">Select</th>
-                  <th className="px-6 py-3">Name</th>
-                  <th className="px-6 py-3">Phone</th>
-                  <th className="px-6 py-3">Selected</th>
+                  <th className="px-6 py-3">Candidate's Name</th>
+                  <th className="px-6 py-3">Phone Number</th>
                   <th className="px-6 py-3">Call Status</th>
-                  <th className="px-6 py-3">Action</th>
+                  <th className="px-6 py-3">Actions</th>
                 </tr>
               </thead>
               <tbody>
@@ -140,20 +217,33 @@ const Users = () => {
                     </td>
                     <td className="px-6 py-4 font-medium text-gray-900">{c.name}</td>
                     <td className="px-6 py-4">{c.phone}</td>
-                    <td className="px-6 py-4">{c.selected ? "Yes" : "No"}</td>
                     <td className="px-6 py-4">
                       <span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
                         {c.callStatus ? "Called" : "Not Called"}
                       </span>
                     </td>
-                    <td className="px-6 py-4">
-                      <button
-                        className="font-medium text-blue-600 hover:underline"
-                        disabled={!c.callStatus}
-                        onClick={() => openTranscript(c)}
-                      >
-                        View Transcript
-                      </button>
+                    <td className="px-6 py-4 flex gap-2">
+                     <button
+              className="flex items-center gap-1 font-medium text-blue-600 hover:underline"
+              onClick={() => openTranscript(c)}
+            >
+              <AiOutlineFileText />
+            </button>
+
+            <button
+              className="flex items-center gap-1 font-medium text-green-600 hover:underline"
+              onClick={() => placeSingleCall(c)}
+              disabled={loading}
+            >
+              <FiPhone />
+            </button>
+
+            <button
+              className="flex items-center gap-1 font-medium text-purple-600 hover:underline"
+              onClick={() => openTranscript(c)} // or a separate function for questions
+            >
+              <RiQuestionAnswerLine />
+            </button>
                     </td>
                   </tr>
                 ))}
@@ -163,53 +253,87 @@ const Users = () => {
         </div>
       </div>
 
-      {/* Immediate Call Modal */}
-      {showImmediateModal && (
+      {/* Add Candidate Modal */}
+      {showAddCandidateModal && (
         <div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
           <div className="mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
-            <div className="mt-3 text-center">
-              <h3 className="text-lg font-medium text-gray-900">AI Conversation Instructions</h3>
-              <div className="mt-2 px-7 py-3">
-                <textarea
-                  rows="6"
-                  value={conversationInstructions}
-                  onChange={(e) => setConversationInstructions(e.target.value)}
-                  className="block p-2.5 w-full text-sm border rounded-lg"
-                  placeholder="e.g., 'Confirm they are still interested in the Software Engineer role...'"
-                ></textarea>
-              </div>
-              <div className="items-center px-4 py-3">
+            <h3 className="text-lg font-medium text-gray-900 mb-4">Add New Candidate</h3>
+            <input
+              type="text"
+              placeholder="Name"
+              value={newCandidateName}
+              onChange={(e) => setNewCandidateName(e.target.value)}
+              className="block w-full p-2 mb-3 border rounded"
+            />
+            <input
+              type="text"
+              placeholder="Phone Number"
+              value={newCandidatePhone}
+              onChange={(e) => setNewCandidatePhone(e.target.value)}
+              className="block w-full p-2 mb-3 border rounded"
+            />
+
+            <h4 className="font-medium mb-2">Questions:</h4>
+            {newCandidateQuestions.map((q, i) => (
+              <div key={i} className="flex gap-2 mb-2">
+                <input
+                  type="text"
+                  value={q}
+                  onChange={(e) => handleAddQuestionChange(i, e.target.value)}
+                  className="flex-1 p-2 border rounded"
+                  placeholder={`Question ${i + 1}`}
+                />
                 <button
-                  onClick={placeCallsNow}
-                  disabled={loading}
-                  className={`px-4 py-2 text-white rounded-md w-full ${
-                    loading ? "bg-blue-400 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
-                  }`}
+                  onClick={() => removeQuestionField(i)}
+                  className="bg-red-500 text-white px-2 rounded hover:bg-red-600"
                 >
-                  {loading ? "Placing Calls..." : "Confirm & Place Calls Now"}
-                </button>
-                <button
-                  onClick={() => setShowImmediateModal(false)}
-                  className="mt-3 px-4 py-2 bg-gray-200 text-gray-800 rounded-md w-full hover:bg-gray-300"
-                >
-                  Cancel
+                  X
                 </button>
               </div>
+            ))}
+            <button
+              onClick={addQuestionField}
+              className="mb-3 px-3 py-1 bg-blue-600 text-white rounded hover:bg-blue-700"
+            >
+              Add Question
+            </button>
+
+            <div className="flex justify-end gap-2">
+              <button
+                onClick={handleAddCandidate}
+                className="px-4 py-2 bg-green-600 text-white rounded hover:bg-green-700"
+              >
+                Add
+              </button>
+              <button
+                onClick={() => setShowAddCandidateModal(false)}
+                className="px-4 py-2 bg-gray-200 text-gray-800 rounded hover:bg-gray-300"
+              >
+                Cancel
+              </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Transcript Modal */}
+      {/* Transcript / Questions Modal */}
       {transcriptModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
           <div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
             <h3 className="text-xl font-bold mb-4">
-              Transcript: {transcriptModal.name}
+              {transcriptModal.callStatus ? "Transcript" : "Questions"}: {transcriptModal.name}
             </h3>
-            <p className="text-gray-700 whitespace-pre-wrap">
-              {transcriptModal.transcript || "Transcript not available yet."}
-            </p>
+            <div className="text-gray-700 whitespace-pre-wrap">
+              {transcriptModal.callStatus
+                ? transcriptModal.transcript || "Transcript not available yet."
+                : transcriptModal.questions.length > 0
+                ? transcriptModal.questions.map((q, i) => (
+                    <p key={i}>
+                      {i + 1}. {q}
+                    </p>
+                  ))
+                : "No questions added."}
+            </div>
             <div className="mt-4 flex justify-end">
               <button
                 onClick={() => setTranscriptModal(null)}
