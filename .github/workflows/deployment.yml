@@ -54,6 +54,11 @@ jobs:
                   chmod 600 ~/.ssh/id_rsa
                   ssh-keyscan -H 54.172.69.143 >> ~/.ssh/known_hosts
 
+            - name: Add SSH key
+              run: |
+                  eval "$(ssh-agent -s)"
+                  ssh-add ~/.ssh/id_rsa
+
             - name: Run deployment script
               run: |
                   chmod +x .github/scripts/deploy.sh
