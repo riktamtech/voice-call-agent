@@ -3,6 +3,7 @@ import axios from "axios";
 import { AiOutlineFileText } from "react-icons/ai";
 import { FiPhone } from "react-icons/fi";
 import { RiQuestionAnswerLine } from "react-icons/ri";
+import { toast } from "react-toastify";
 
 const Users = () => {
 	const [showImmediateModal, setShowImmediateModal] = useState(false);
@@ -10,17 +11,7 @@ const Users = () => {
 	const [conversationInstructions, setConversationInstructions] = useState("");
 	const [loading, setLoading] = useState(false);
 	const [transcriptModal, setTranscriptModal] = useState(null); // candidate object for transcript
-	const [candidates, setCandidates] = useState([
-		{
-			id: 1,
-			name: "John Doe",
-			phone: "1234567890",
-			selected: false,
-			transcript: "",
-			callStatus: false,
-			questions: [],
-		},
-	]);
+	const [candidates, setCandidates] = useState([]);
 	const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
 
 	// New candidate form state
@@ -285,7 +276,7 @@ const Users = () => {
 							onChange={(e) => setAiInstructionsSchedule(e.target.value)}
 							id="ai-instructions-immediate"
 							rows="8"
-							class="block p-2.5 mt-2 mb-3 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-blue-500 focus:border-blue-500"
+							className="block p-2.5 mt-2 mb-3 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
 							placeholder="e.g., 'Confirm they are still interested in the Software Engineer role...'"
 						></textarea>
 						{/* {newCandidateQuestions.map((q, i) => (
@@ -359,7 +350,132 @@ const Users = () => {
 					</div>
 				</div>
 			)}
+
+			{showScheduleModal && (
+				<ScheduleModal isOpen={showScheduleModal} onClose={() => setShowScheduleModal(false)} />
+			)}
+
+			{showImmediateModal && (
+				<ImmediateModal isOpen={showImmediateModal} onClose={() => setShowImmediateModal(false)} />
+			)}
 		</>
+	);
+};
+
+function ScheduleModal({ isOpen, onClose }) {
+	const [date, setDate] = useState("");
+	const [time, setTime] = useState("");
+	const [instructions, setInstructions] = useState("");
+
+	if (!isOpen) return null;
+
+	const onConfirm = () => {
+		try {
+			toast.success("Scheduled successfully!");
+		} catch (e) {
+			toast.error(e.message);
+		}
+	};
+
+	return (
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+				<h2 className="text-xl font-semibold mb-4 text-center">Schedule Screening Calls</h2>
+
+				<div className="mb-4">
+					<label className="block text-sm font-medium mb-1" htmlFor="date">
+						Date
+					</label>
+					<input
+						type="date"
+						id="date"
+						value={date}
+						onChange={(e) => setDate(e.target.value)}
+						className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+					/>
+				</div>
+
+				<div className="mb-4">
+					<label className="block text-sm font-medium mb-1" htmlFor="time">
+						Time
+					</label>
+					<input
+						type="time"
+						id="time"
+						value={time}
+						onChange={(e) => setTime(e.target.value)}
+						className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+					/>
+				</div>
+
+				<div className="mb-4">
+					<label className="block text-sm font-medium mb-1" htmlFor="instructions">
+						AI Conversation Instructions
+					</label>
+					<textarea
+						id="instructions"
+						value={instructions}
+						onChange={(e) => setInstructions(e.target.value)}
+						placeholder="e.g., 'Confirm they are still interested in the Software Engineer role...'"
+						className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-24 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+					/>
+				</div>
+
+				<div className="flex justify-end space-x-2">
+					<button
+						onClick={onClose}
+						className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+					>
+						Cancel
+					</button>
+					<button
+						className="px-4 py-2 text-sm rounded-md bg-green-600 hover:bg-green-700 text-white"
+						onClick={onConfirm}
+					>
+						Confirm & Schedule Calls
+					</button>
+				</div>
+			</div>
+		</div>
+	);
+}
+
+const ImmediateModal = ({ isOpen, onClose }) => {
+	const [instructions, setInstructions] = useState("");
+	if (!isOpen) return null;
+	const onConfirm = () => {
+		try {
+			toast.success("Scheduled successfully!");
+		} catch (e) {
+			toast.error(e.message);
+		}
+	};
+	return (
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+				<h2 className="text-xl font-semibold mb-4 text-center">AI Conversation Instructions</h2>
+				<textarea
+					value={instructions}
+					onChange={(e) => setInstructions(e.target.value)}
+					className="w-full h-32 border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md p-2 mb-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
+					placeholder="e.g., 'Confirm they are still interested in the Software Engineer role...'"
+				/>
+				<div className="flex justify-end space-x-2">
+					<button
+						onClick={onClose}
+						className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+					>
+						Cancel
+					</button>
+					<button
+						onClick={onConfirm}
+						className="px-4 py-2 rounded-md bg-blue-600 hover:bg-blue-700 text-white"
+					>
+						Confirm & Place Calls Now
+					</button>
+				</div>
+			</div>
+		</div>
 	);
 };
 

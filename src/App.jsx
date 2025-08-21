@@ -1,13 +1,14 @@
-import { useState } from 'react'
-import reactLogo from './assets/react.svg'
-import viteLogo from '/vite.svg'
-import './App.css'
-import Dashboard from './components/Dashboard'
+import "./App.css";
+import Dashboard from "./components/Dashboard";
+import { ToastContainer } from 'react-toastify';
 
 function App() {
-  return (
-    <Dashboard/>
-  )
+	return (
+		<>
+			<Dashboard />
+			<ToastContainer />
+		</>
+	);
 }
 
-export default App
+export default App;
