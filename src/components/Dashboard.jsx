@@ -1,5 +1,5 @@
 import React from 'react'
-import Users from './users'
+import Users from './Users'
 
 const Dashboard = () => {
   return (
