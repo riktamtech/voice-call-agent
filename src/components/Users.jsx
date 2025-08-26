@@ -3,7 +3,7 @@ import axios from "axios";
 import { AiOutlineFileText } from "react-icons/ai";
 import { FiPhone } from "react-icons/fi";
 import { RiQuestionAnswerLine } from "react-icons/ri";
-import { AiOutlineUserAdd, AiOutlineSchedule, AiOutlinePhone } from "react-icons/ai";
+import { AiOutlineUserAdd, AiOutlineSchedule, AiOutlinePhone, AiOutlineEdit } from "react-icons/ai";
 
 import { toast } from "react-toastify";
 const URL = import.meta.env.VITE_API_URL;
@@ -14,14 +14,12 @@ const Users = () => {
 	const [showScheduleModal, setShowScheduleModal] = useState(false);
 	const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
 	const [selectedIds, setSelectedIds] = useState([]);
+	const [promptModal, setPromptModal] = useState(null);
 
 	const [transcriptModal, setTranscriptModal] = useState(null);
 	const [instructionsModal, setInstructionsModal] = useState(null);
 	const [candidates, setCandidates] = useState([]);
 
-	const [newCandidateName, setNewCandidateName] = useState("");
-	const [newCandidatePhone, setNewCandidatePhone] = useState("");
-	const [newCandidateInstruction, setCandidateInstruction] = useState("");
 
 	// Fetch candidates
 	const fetchUsers = async () => {
@@ -33,6 +31,9 @@ const Users = () => {
 				name: u.name,
 				phone: u.phone,
 				instruction: u.instruction,
+				use_default: u.use_default,
+				custom_instruction: u.custom_instruction,
+				custom_greet_instruction: u.custom_greet_instruction,
 				transcription: u.transcription,
 				call_status: u.call_status,
 			}));
@@ -68,48 +69,6 @@ const Users = () => {
 
 	const openTranscript = (candidate) => setTranscriptModal(candidate);
 	const openInstructions = (candidate) => setInstructionsModal(candidate);
-
-	const handleAddCandidate = async () => {
-		try {
-			if (!newCandidateName || !newCandidatePhone) {
-				toast.error("Name and phone are required!");
-				return;
-			}
-
-			if (newCandidatePhone.length !== 10) {
-				toast.error("Enter 10 digit valid phone number");
-				return;
-			}
-
-			const data = {
-				name: newCandidateName,
-				phone: newCandidatePhone,
-				instruction: newCandidateInstruction,
-			};
-
-			setLoading(true);
-			const route = URL + "/create-user";
-			const result = await axios.post(route, data);
-
-			if (result.status === 201) {
-				// ✅ Only close modal if success
-				await fetchUsers();
-				toast.success(`User Added`);
-
-				setShowAddCandidateModal(false);
-				setNewCandidateName("");
-				setNewCandidatePhone("");
-				setCandidateInstruction("");
-			} else {
-				toast.error("Unable to create the user");
-			}
-		} catch (error) {
-			console.error("Error creating user:", error);
-			toast.error("Unable to create the user");
-		} finally {
-			setLoading(false);
-		}
-	};
 
 	return (
 		<>
@@ -207,6 +166,14 @@ const Users = () => {
 											>
 												<RiQuestionAnswerLine size={20} />
 											</button>
+
+											<button
+												className="w-12 h-12 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 shadow-md"
+												onClick={() => setPromptModal(c)}  // new state trigger
+												
+											>
+												<AiOutlineEdit size={20} />
+											</button>
 										</td>
 									</tr>
 								))}
@@ -220,14 +187,9 @@ const Users = () => {
 			{showAddCandidateModal && (
 				<AddCandidateModal
 					isOpen={showAddCandidateModal}
+					setShowAddCandidateModal={setShowAddCandidateModal}
 					onClose={() => setShowAddCandidateModal(false)}
-					newCandidateName={newCandidateName}
-					setNewCandidateName={setNewCandidateName}
-					newCandidatePhone={newCandidatePhone}
-					setNewCandidatePhone={setNewCandidatePhone}
-					newCandidateInstruction={newCandidateInstruction}
-					setCandidateInstruction={setCandidateInstruction}
-					handleAddCandidate={handleAddCandidate}
+					fetchUsers = {fetchUsers}
 				/>
 			)}
 
@@ -259,20 +221,28 @@ const Users = () => {
 					onClose={() => setShowImmediateModal(false)}
 				/>
 			)}
+
+			{promptModal && (
+				<UpdatePromptModal candidate={promptModal} onClose={() => setPromptModal(null)} fetchUsers = {fetchUsers} />
+			)}
 		</>
 	);
 };
 
 // ================== Schedule Modal ==================
+
 const ScheduleModal = ({ isOpen, onClose, selectedIds, setShowScheduleModal }) => {
 	const [date, setDate] = useState("");
 	const [time, setTime] = useState("");
+	const [useDefault, setUseDefault] = useState(true);
 	const [instruction, setInstruction] = useState("");
+	const [custom_greet_instruction, setGreetingPrompt] = useState("");
+	const [custom_instruction, setCustomPrompt] = useState("");
 
 	if (!isOpen) return null;
 
 	const onConfirm = async () => {
-		if (selectedIds.length == 0) {
+		if (selectedIds.length === 0) {
 			toast.error("Select at least one candidate");
 			return;
 		}
@@ -280,21 +250,35 @@ const ScheduleModal = ({ isOpen, onClose, selectedIds, setShowScheduleModal }) =
 			toast.error("Date and Time are required");
 			return;
 		}
+
+		// validation for prompts
+		if (!useDefault && (!custom_greet_instruction.trim() || !custom_instruction.trim())) {
+			toast.error("Greeting and Custom Prompt are required when not using default");
+			return;
+		}
+
 		try {
 			const schedule_time = new Date(`${date}T${time}:00`).toISOString();
 			await axios.post(URL + "/start-batch-call", {
 				user_ids: selectedIds,
-				instruction,
+				use_default: useDefault,
+				instruction: useDefault ? instruction : null,
+				custom_greet_instruction: useDefault ? null : custom_greet_instruction,
+				custom_instruction: useDefault ? null : custom_instruction,
 				schedule_time,
 			});
-			toast.success("Batch call initiated!");
+			toast.success("Batch call scheduled!");
+			// reset
 			setDate("");
 			setTime("");
 			setInstruction("");
+			setGreetingPrompt("");
+			setCustomPrompt("");
+			setUseDefault(true);
 			setShowScheduleModal(false);
 		} catch (err) {
 			console.error("Error placing call:", err);
-			toast.error("Failed to place call. Please try again.");
+			toast.error("Failed to schedule calls. Please try again.");
 		}
 	};
 
@@ -302,6 +286,8 @@ const ScheduleModal = ({ isOpen, onClose, selectedIds, setShowScheduleModal }) =
 		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
 			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
 				<h2 className="text-xl font-semibold mb-4 text-center">Schedule Screening Calls</h2>
+
+				{/* Date */}
 				<div className="mb-4">
 					<label className="block text-sm font-medium mb-1">Date</label>
 					<input
@@ -311,6 +297,8 @@ const ScheduleModal = ({ isOpen, onClose, selectedIds, setShowScheduleModal }) =
 						className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
 					/>
 				</div>
+
+				{/* Time */}
 				<div className="mb-4">
 					<label className="block text-sm font-medium mb-1">Time</label>
 					<input
@@ -320,15 +308,58 @@ const ScheduleModal = ({ isOpen, onClose, selectedIds, setShowScheduleModal }) =
 						className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
 					/>
 				</div>
+
+				{/* Prompt Selection */}
 				<div className="mb-4">
-					<label className="block text-sm font-medium mb-1">AI Conversation Instructions</label>
-					<textarea
-						value={instruction}
-						onChange={(e) => setInstruction(e.target.value)}
-						placeholder="e.g., 'Confirm interest...'"
-						className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-24 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
-					/>
+					<label className="flex items-center space-x-2">
+						<input
+							type="checkbox"
+							checked={useDefault}
+							onChange={(e) => setUseDefault(e.target.checked)}
+							className="h-4 w-4 text-indigo-600"
+						/>
+						<span className="text-sm text-gray-700">Use default instruction</span>
+					</label>
 				</div>
+
+				{/* Default Instruction */}
+				{useDefault && (
+					<div className="mb-4">
+						<label className="block text-sm font-medium mb-1">Instruction</label>
+						<textarea
+							value={instruction}
+							onChange={(e) => setInstruction(e.target.value)}
+							placeholder="Default AI conversation instruction"
+							className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+						/>
+					</div>
+				)}
+
+				{/* Greeting + Custom */}
+				{!useDefault && (
+					<>
+						<div className="mb-4">
+							<label className="block text-sm font-medium mb-1">Greeting Prompt</label>
+							<textarea
+								value={custom_greet_instruction}
+								onChange={(e) => setGreetingPrompt(e.target.value)}
+								placeholder="e.g., Hello! This is an AI call..."
+								className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+							/>
+						</div>
+						<div className="mb-4">
+							<label className="block text-sm font-medium mb-1">Custom Prompt</label>
+							<textarea
+								value={custom_instruction}
+								onChange={(e) => setCustomPrompt(e.target.value)}
+								placeholder="e.g., Confirm the candidate’s availability..."
+								className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+							/>
+						</div>
+					</>
+				)}
+
+				{/* Actions */}
 				<div className="flex justify-end space-x-2">
 					<button
 						onClick={onClose}
@@ -350,18 +381,38 @@ const ScheduleModal = ({ isOpen, onClose, selectedIds, setShowScheduleModal }) =
 
 // ================== Immediate Modal ==================
 const ImmediateModal = ({ isOpen, onClose, selectedIds, setShowImmediateModal }) => {
+	const [useDefault, setUseDefault] = useState(true);
 	const [instruction, setInstruction] = useState("");
+	const [custom_greet_instruction, setGreetingPrompt] = useState("");
+	const [custom_instruction, setCustomPrompt] = useState("");
 	if (!isOpen) return null;
 
 	const onConfirm = async () => {
+
+		// validation for prompts
+		if (!useDefault && (!custom_greet_instruction.trim() || !custom_instruction.trim())) {
+			toast.error("Greeting and Custom Prompt are required when not using default");
+			return;
+		}
+
+
 		if (selectedIds.length == 0) {
 			toast.error("Select at least one candidate");
 			return;
 		}
 		try {
-			await axios.post(URL + "/start-batch-call", { user_ids: selectedIds, instruction });
+			await axios.post(URL + "/start-batch-call", {
+				user_ids: selectedIds,
+				use_default: useDefault,
+				instruction: useDefault ? instruction : null,
+				custom_greet_instruction: useDefault ? null : custom_greet_instruction,
+				custom_instruction: useDefault ? null : custom_instruction,
+			});
 			toast.success("Batch call initiated!");
 			setInstruction("");
+			setGreetingPrompt("");
+			setCustomPrompt("");
+			setUseDefault(true);
 			setShowImmediateModal(false);
 		} catch (err) {
 			console.error("Error placing call:", err);
@@ -372,13 +423,59 @@ const ImmediateModal = ({ isOpen, onClose, selectedIds, setShowImmediateModal })
 	return (
 		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
 			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-				<h2 className="text-xl font-semibold mb-4 text-center">AI Conversation Instructions</h2>
-				<textarea
-					value={instruction}
-					onChange={(e) => setInstruction(e.target.value)}
-					className="w-full h-32 border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md p-2 mb-4 resize-none focus:outline-none focus:ring-2 focus:ring-blue-500"
-					placeholder="e.g., 'Confirm interest...'"
-				/>
+				<h2 className="text-xl font-semibold mb-4 text-center">Schedule Screening Calls</h2>
+
+				{/* Prompt Selection */}
+				<div className="mb-4">
+					<label className="flex items-center space-x-2">
+						<input
+							type="checkbox"
+							checked={useDefault}
+							onChange={(e) => setUseDefault(e.target.checked)}
+							className="h-4 w-4 text-indigo-600"
+						/>
+						<span className="text-sm text-gray-700">Use default instruction</span>
+					</label>
+				</div>
+
+				{/* Default Instruction */}
+				{useDefault && (
+					<div className="mb-4">
+						<label className="block text-sm font-medium mb-1">Instruction</label>
+						<textarea
+							value={instruction}
+							onChange={(e) => setInstruction(e.target.value)}
+							placeholder="Default AI conversation instruction"
+							className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+						/>
+					</div>
+				)}
+
+				{/* Greeting + Custom */}
+				{!useDefault && (
+					<>
+						<div className="mb-4">
+							<label className="block text-sm font-medium mb-1">Greeting Prompt</label>
+							<textarea
+								value={custom_greet_instruction}
+								onChange={(e) => setGreetingPrompt(e.target.value)}
+								placeholder="e.g., Hello! This is an AI call..."
+								className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+							/>
+						</div>
+						<div className="mb-4">
+							<label className="block text-sm font-medium mb-1">Custom Prompt</label>
+							<textarea
+								value={custom_instruction}
+								onChange={(e) => setCustomPrompt(e.target.value)}
+								placeholder="e.g., Confirm the candidate’s availability..."
+								className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+							/>
+						</div>
+					</>
+				)}
+
+				{/* Actions */}
 				<div className="flex justify-end space-x-2">
 					<button
 						onClick={onClose}
@@ -390,7 +487,7 @@ const ImmediateModal = ({ isOpen, onClose, selectedIds, setShowImmediateModal })
 						onClick={onConfirm}
 						className="px-4 py-2 text-sm rounded-md bg-green-600 hover:bg-green-700 text-white"
 					>
-						Confirm & Place Calls Now
+						Confirm & Schedule Calls
 					</button>
 				</div>
 			</div>
@@ -414,6 +511,8 @@ const TranscriptModal = ({ candidate, onClose }) => (
 					))
 				)}
 			</div>
+
+
 			<div className="mt-4 flex justify-end">
 				<button
 					onClick={onClose}
@@ -430,8 +529,21 @@ const ShowInstructionsModal = ({ candidate, onClose }) => (
 	<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
 		<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
 			<h3 className="text-xl font-bold mb-4">Instructions</h3>
-			<div className="text-gray-700 whitespace-pre-wrap">{candidate.instruction}</div>
-			<div className="mt-4 flex justify-end">
+			<div className="text-gray-700 whitespace-pre-wrap">
+				{candidate.instruction || "—"}
+			</div>
+
+			<h3 className="text-xl font-bold mt-6 mb-2">Greeting Prompt</h3>
+			<div className="text-gray-700 whitespace-pre-wrap">
+				{candidate.custom_greet_instruction || "—"}
+			</div>
+
+			<h3 className="text-xl font-bold mt-6 mb-2">Custom Prompt</h3>
+			<div className="text-gray-700 whitespace-pre-wrap">
+				{candidate.custom_instruction || "—"}
+			</div>
+
+			<div className="mt-6 flex justify-end">
 				<button
 					onClick={onClose}
 					className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
@@ -443,48 +555,258 @@ const ShowInstructionsModal = ({ candidate, onClose }) => (
 	</div>
 );
 
+
 // ================== Add Candidate Modal ==================
-const AddCandidateModal = ({
-	isOpen,
-	onClose,
-	newCandidateName,
-	setNewCandidateName,
-	newCandidatePhone,
-	setNewCandidatePhone,
-	newCandidateInstruction,
-	setCandidateInstruction,
-	handleAddCandidate,
-}) => {
+
+const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUsers}) => {
+	const [name, setName] = useState("");
+	const [phone, setPhone] = useState("");
+	const [useDefault, setUseDefault] = useState(true);
+	const [instruction, setInstruction] = useState("");
+	const [custom_greet_instruction, setGreetingPrompt] = useState("");
+	const [custom_instruction, setCustomPrompt] = useState("");
+
 	if (!isOpen) return null;
+
+	const onConfirm = async () => {
+
+		if (!name || !phone) {
+			toast.error("Name and Phone are required");
+			return;
+		}
+
+
+		if (phone.length !== 10) {
+			toast.error("Enter 10 digit valid phone number");
+			return;
+		}
+
+
+		if (!useDefault && (!custom_greet_instruction.trim() || !custom_instruction.trim())) {
+			toast.error("Greeting and Custom Prompt are required when not using default");
+			return;
+		}
+
+		try {
+			const result = await axios.post(URL + "/create-user", {
+				name,
+				phone,
+				use_default: useDefault,
+				instruction: useDefault ? instruction : null,
+				custom_greet_instruction: useDefault ? null : custom_greet_instruction,
+				custom_instruction: useDefault ? null : custom_instruction,
+			});
+			if (result.status === 201) {
+				await fetchUsers();
+				toast.success(`User Added`);
+			}
+			else {
+				toast.error("Unable to create the user");
+			}
+			setShowAddCandidateModal(false);
+		} catch (err) {
+			console.error("Error creating users:", err);
+			toast.error("Error creating users");
+		}
+	};
+
 	return (
-		<div className="fixed inset-0 bg-gray-600 bg-opacity-50 flex items-center justify-center">
-			<div className="mx-auto p-5 border w-full max-w-lg shadow-lg rounded-md bg-white">
-				<h3 className="text-lg font-medium text-gray-900 mb-4">Add New Candidate</h3>
-				<input
-					type="text"
-					placeholder="Name"
-					value={newCandidateName}
-					onChange={(e) => setNewCandidateName(e.target.value)}
-					className="block w-full p-2 mb-3 border rounded"
-				/>
-				<div className="flex items-center border rounded-lg overflow-hidden mb-3 w-full">
-					<span className="px-3 py-2 bg-gray-100 text-gray-700 border-r text-sm">+91</span>
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+				<h2 className="text-xl font-semibold mb-4 text-center">Add Candiadtes</h2>
+
+				{/* Date */}
+				<div className="mb-4">
+					<label className="block text-sm font-medium mb-1">Name</label>
 					<input
 						type="text"
-						placeholder="Phone Number"
-						value={newCandidatePhone}
-						onChange={(e) => setNewCandidatePhone(e.target.value)}
-						className="flex-1 px-3 py-2 focus:outline-none text-sm"
+						value={name}
+						onChange={(e) => setName(e.target.value)}
+						className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
 					/>
 				</div>
-				<h4 className="font-medium mb-2">AI Conversation Instructions</h4>
-				<textarea
-					value={newCandidateInstruction}
-					onChange={(e) => setCandidateInstruction(e.target.value)}
-					rows="8"
-					className="block p-2.5 mt-2 mb-3 w-full text-sm text-gray-900 bg-gray-50 rounded-lg border border-gray-300 focus:ring-indigo-500 focus:border-indigo-500"
-					placeholder="e.g., 'Confirm interest in the role...'"
-				></textarea>
+
+				{/* Time */}
+				<div className="mb-4">
+					<label className="block text-sm font-medium mb-1">Phone</label>
+					<input
+						type="text"
+						value={phone}
+						onChange={(e) => setPhone(e.target.value)}
+						className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+					/>
+				</div>
+
+				{/* Prompt Selection */}
+				<div className="mb-4">
+					<label className="flex items-center space-x-2">
+						<input
+							type="checkbox"
+							checked={useDefault}
+							onChange={(e) => setUseDefault(e.target.checked)}
+							className="h-4 w-4 text-indigo-600"
+						/>
+						<span className="text-sm text-gray-700">Use default instruction</span>
+					</label>
+				</div>
+
+				{/* Default Instruction */}
+				{useDefault && (
+					<div className="mb-4">
+						<label className="block text-sm font-medium mb-1">Instruction</label>
+						<textarea
+							value={instruction}
+							onChange={(e) => setInstruction(e.target.value)}
+							placeholder="Default AI conversation instruction"
+							className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+						/>
+					</div>
+				)}
+
+				{/* Greeting + Custom */}
+				{!useDefault && (
+					<>
+						<div className="mb-4">
+							<label className="block text-sm font-medium mb-1">Greeting Prompt</label>
+							<textarea
+								value={custom_greet_instruction}
+								onChange={(e) => setGreetingPrompt(e.target.value)}
+								placeholder="e.g., Hello! This is an AI call..."
+								className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+							/>
+						</div>
+						<div className="mb-4">
+							<label className="block text-sm font-medium mb-1">Custom Prompt</label>
+							<textarea
+								value={custom_instruction}
+								onChange={(e) => setCustomPrompt(e.target.value)}
+								placeholder="e.g., Confirm the candidate’s availability..."
+								className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+							/>
+						</div>
+					</>
+				)}
+
+				{/* Actions */}
+				<div className="flex justify-end space-x-2">
+					<button
+						onClick={onClose}
+						className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+					>
+						Cancel
+					</button>
+					<button
+						onClick={onConfirm}
+						className="px-4 py-2 text-sm rounded-md bg-green-600 hover:bg-green-700 text-white"
+					>
+						Confirm & Schedule Calls
+					</button>
+				</div>
+			</div>
+		</div>
+	);
+};
+
+// ================== Update Prompt Modal ==================
+const UpdatePromptModal = ({ candidate, onClose, fetchUsers }) => {
+	const [useDefault, setUseDefault] = useState(candidate.use_default);
+	const [instruction, setInstruction] = useState(candidate.instruction || "");
+	const [custom_greet_instruction, setGreetingPrompt] = useState(candidate.custom_greet_instruction || "");
+	const [custom_instruction, setCustomPrompt] = useState(candidate.custom_instruction || "");
+
+	const handleSave = async () => {
+		try {
+			// ✅ Validation
+			if (!useDefault) {
+				if (!custom_greet_instruction.trim() || !custom_instruction.trim()) {
+					toast.error("Greeting Prompt and Custom Prompt are required when not using default!");
+					return;
+				}
+			}
+
+			const result = await axios.post(`${URL}/update-instructions/${candidate.id}`, {
+				use_default: useDefault,
+				instruction: instruction,
+				custom_greet_instruction: custom_greet_instruction,
+				custom_instruction: custom_instruction,
+			});
+
+
+			if (result.status === 200) {
+				await fetchUsers();
+				toast.success(`Prompt updated`);
+			}
+			else {
+				toast.error("Unable to update the prompt");
+			}
+			onClose();
+		} catch (err) {
+			console.error("Error updating prompt:", err);
+			toast.error("Failed to update prompt");
+		}
+	};
+
+
+	return (
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+				<h3 className="text-xl font-bold mb-4">Update Prompt</h3>
+
+				{/* Default Prompt Toggle */}
+				<div className="mb-4">
+					<label className="block text-sm font-medium mb-2">Use Default Prompt?</label>
+					<div className="flex gap-4">
+						<label className="flex items-center gap-2">
+							<input
+								type="radio"
+								checked={useDefault}
+								onChange={() => setUseDefault(true)}
+							/>
+							Yes
+						</label>
+						<label className="flex items-center gap-2">
+							<input
+								type="radio"
+								checked={!useDefault}
+								onChange={() => setUseDefault(false)}
+							/>
+							No
+						</label>
+					</div>
+				</div>
+
+				{/* Show fields conditionally */}
+				{useDefault ? (
+					<div className="mb-4">
+						<label className="block text-sm font-medium mb-1">Instruction</label>
+						<textarea
+							value={instruction}
+							onChange={(e) => setInstruction(e.target.value)}
+							className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-24 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+						/>
+					</div>
+				) : (
+					<>
+						<div className="mb-4">
+							<label className="block text-sm font-medium mb-1">Greeting Prompt</label>
+							<input
+								type="text"
+								value={custom_greet_instruction}
+								onChange={(e) => setGreetingPrompt(e.target.value)}
+								className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2"
+							/>
+						</div>
+						<div className="mb-4">
+							<label className="block text-sm font-medium mb-1">Custom Prompt</label>
+							<textarea
+								value={custom_instruction}
+								onChange={(e) => setCustomPrompt(e.target.value)}
+								className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-24 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
+							/>
+						</div>
+					</>
+				)}
+
 				<div className="flex justify-end gap-2">
 					<button
 						onClick={onClose}
@@ -493,10 +815,10 @@ const AddCandidateModal = ({
 						Cancel
 					</button>
 					<button
-						onClick={handleAddCandidate}
+						onClick={handleSave}
 						className="px-4 py-2 text-sm rounded-md bg-green-600 hover:bg-green-700 text-white"
 					>
-						Add Candidate
+						Save
 					</button>
 				</div>
 			</div>
