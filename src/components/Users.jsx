@@ -4,6 +4,8 @@ import { AiOutlineFileText } from "react-icons/ai";
 import { FiPhone } from "react-icons/fi";
 import { RiQuestionAnswerLine } from "react-icons/ri";
 import { AiOutlineUserAdd, AiOutlineSchedule, AiOutlinePhone, AiOutlineEdit } from "react-icons/ai";
+import PhoneInput from "react-phone-input-2";
+import "react-phone-input-2/lib/style.css";
 
 import { toast } from "react-toastify";
 const URL = import.meta.env.VITE_API_URL;
@@ -46,6 +48,16 @@ const Users = () => {
 		fetchUsers();
 	}, []);
 
+
+	useEffect(() => {
+		fetchUsers(); // initial load
+
+		const interval = setInterval(() => {
+			fetchUsers();
+		}, 10000); // every 10 sec
+
+		return () => clearInterval(interval); // cleanup
+	}, []);
 	const handleCheckboxChange = (id) => {
 		setSelectedIds((prev) => (prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]));
 	};
@@ -170,7 +182,7 @@ const Users = () => {
 											<button
 												className="w-12 h-12 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 shadow-md"
 												onClick={() => setPromptModal(c)}  // new state trigger
-												
+
 											>
 												<AiOutlineEdit size={20} />
 											</button>
@@ -189,7 +201,7 @@ const Users = () => {
 					isOpen={showAddCandidateModal}
 					setShowAddCandidateModal={setShowAddCandidateModal}
 					onClose={() => setShowAddCandidateModal(false)}
-					fetchUsers = {fetchUsers}
+					fetchUsers={fetchUsers}
 				/>
 			)}
 
@@ -223,7 +235,7 @@ const Users = () => {
 			)}
 
 			{promptModal && (
-				<UpdatePromptModal candidate={promptModal} onClose={() => setPromptModal(null)} fetchUsers = {fetchUsers} />
+				<UpdatePromptModal candidate={promptModal} onClose={() => setPromptModal(null)} fetchUsers={fetchUsers} />
 			)}
 		</>
 	);
@@ -558,7 +570,7 @@ const ShowInstructionsModal = ({ candidate, onClose }) => (
 
 // ================== Add Candidate Modal ==================
 
-const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUsers}) => {
+const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUsers }) => {
 	const [name, setName] = useState("");
 	const [phone, setPhone] = useState("");
 	const [useDefault, setUseDefault] = useState(true);
@@ -575,11 +587,10 @@ const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUse
 			return;
 		}
 
-
-		if (phone.length !== 10) {
-			toast.error("Enter 10 digit valid phone number");
-			return;
-		}
+		// if (phone.length !== 10) {
+		// 	toast.error("Enter 10 digit valid phone number");
+		// 	return;
+		// }
 
 
 		if (!useDefault && (!custom_greet_instruction.trim() || !custom_instruction.trim())) {
@@ -629,11 +640,12 @@ const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUse
 				{/* Time */}
 				<div className="mb-4">
 					<label className="block text-sm font-medium mb-1">Phone</label>
-					<input
-						type="text"
+					<PhoneInput
+						defaultCountry="in"
 						value={phone}
-						onChange={(e) => setPhone(e.target.value)}
-						className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+						onChange={(val) => setPhone(val)}
+						className=""
+						inputStyle={{ width: "100%" }}
 					/>
 				</div>
 
