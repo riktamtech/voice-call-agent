@@ -33,6 +33,7 @@ const Users = () => {
 				name: u.name,
 				phone: u.phone,
 				instruction: u.instruction,
+				schedule_time: u.schedule_time,
 				use_default: u.use_default,
 				custom_instruction: u.custom_instruction,
 				custom_greet_instruction: u.custom_greet_instruction,
@@ -132,10 +133,11 @@ const Users = () => {
 							<thead className="text-xs text-gray-700 uppercase bg-gray-50">
 								<tr>
 									<th className="p-4">Select</th>
-									<th className="px-6 py-3">Candidate's Name</th>
-									<th className="px-6 py-3">Phone Number</th>
-									<th className="px-6 py-3">Call Status</th>
-									<th className="px-6 py-3">Actions</th>
+									<th className="px-6 py-3 text-center">Name</th>
+									<th className="px-6 py-3 text-center">Phone Number</th>
+									<th className="px-6 py-3 text-center">Call Status</th>
+									<th className="px-6 py-3 text-center">Scheduled At</th>
+									<th className="px-6 py-3 text-center">Actions</th>
 								</tr>
 							</thead>
 							<tbody>
@@ -149,14 +151,19 @@ const Users = () => {
 												className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded"
 											/>
 										</td>
-										<td className="px-6 py-4 font-medium text-gray-900">{c.name}</td>
-										<td className="px-6 py-4">{c.phone}</td>
-										<td className="px-6 py-4">
+										<td className="px-6 py-4 font-medium text-gray-900 text-center">{c.name}</td>
+										<td className="px-6 py-4 text-center">{c.phone}</td>
+										<td className="px-6 py-4 text-center">
 											<span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
 												{c.call_status}
 											</span>
 										</td>
-										<td className="px-6 py-4 flex gap-2">
+										<td className="px-6 py-4 text-center">
+											<span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+												{c.schedule_time ? new Date(c.schedule_time).toLocaleString() : "Not Scheduled"}
+											</span>
+										</td>
+										<td className="px-6 py-4 flex gap-2 justify-center">
 											<button
 												className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 shadow-md"
 												onClick={() => openTranscript(c)}
@@ -181,12 +188,12 @@ const Users = () => {
 
 											<button
 												className="w-12 h-12 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 shadow-md"
-												onClick={() => setPromptModal(c)}  // new state trigger
-
+												onClick={() => setPromptModal(c)}
 											>
 												<AiOutlineEdit size={20} />
 											</button>
 										</td>
+
 									</tr>
 								))}
 							</tbody>
