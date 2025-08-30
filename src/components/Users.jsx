@@ -610,9 +610,9 @@ const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUse
 				name,
 				phone,
 				use_default: useDefault,
-				instruction: useDefault ? instruction : null,
-				custom_greet_instruction: useDefault ? null : custom_greet_instruction,
-				custom_instruction: useDefault ? null : custom_instruction,
+				instruction: instruction,
+				custom_greet_instruction: custom_greet_instruction,
+				custom_instruction: custom_instruction,
 			});
 			if (result.status === 201) {
 				await fetchUsers();
