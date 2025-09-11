@@ -3,7 +3,7 @@ import axios from "axios";
 import { AiOutlineFileText } from "react-icons/ai";
 import { FiPhone } from "react-icons/fi";
 import { RiQuestionAnswerLine } from "react-icons/ri";
-import { AiOutlineUserAdd, AiOutlineSchedule, AiOutlinePhone, AiOutlineEdit } from "react-icons/ai";
+import { AiOutlineUserAdd, AiOutlineSchedule, AiOutlinePhone, AiOutlineEdit, AiOutlineUpload } from "react-icons/ai";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
 
@@ -15,12 +15,16 @@ const Users = () => {
 	const [showImmediateModal, setShowImmediateModal] = useState(false);
 	const [showScheduleModal, setShowScheduleModal] = useState(false);
 	const [showAddCandidateModal, setShowAddCandidateModal] = useState(false);
+	const [showUploadModal, setShowUploadModal] = useState(false);
 	const [selectedIds, setSelectedIds] = useState([]);
 	const [promptModal, setPromptModal] = useState(null);
 
 	const [transcriptModal, setTranscriptModal] = useState(null);
 	const [instructionsModal, setInstructionsModal] = useState(null);
 	const [candidates, setCandidates] = useState([]);
+
+	const [folders, setFolders] = useState([]);
+	const [selectedFolder, setSelectedFolder] = useState(null);
 
 
 	// Fetch candidates
@@ -32,6 +36,7 @@ const Users = () => {
 				id: u.user_id,
 				name: u.name,
 				phone: u.phone,
+				folder_name: u.folder_name || "default", // add folder_name
 				instruction: u.instruction,
 				schedule_time: u.schedule_time,
 				use_default: u.use_default,
@@ -40,25 +45,23 @@ const Users = () => {
 				transcription: u.transcription,
 				call_status: u.call_status,
 			}));
+
 			setCandidates(users);
+
+			// Extract unique folder names
+			const uniqueFolders = [...new Set(users.map(u => u.folder_name))];
+			setFolders(uniqueFolders);
 		} catch (error) {
 			console.error("Error fetching users:", error);
 		}
 	};
+
 	useEffect(() => {
 		fetchUsers();
+		const interval = setInterval(fetchUsers, 10000);
+		return () => clearInterval(interval);
 	}, []);
 
-
-	useEffect(() => {
-		fetchUsers(); // initial load
-
-		const interval = setInterval(() => {
-			fetchUsers();
-		}, 10000); // every 10 sec
-
-		return () => clearInterval(interval); // cleanup
-	}, []);
 	const handleCheckboxChange = (id) => {
 		setSelectedIds((prev) => (prev.includes(id) ? prev.filter((sid) => sid !== id) : [...prev, id]));
 	};
@@ -122,8 +125,41 @@ const Users = () => {
 							<AiOutlinePhone size={18} />
 							Place Immediate Calls
 						</button>
+						<button
+							onClick={() => setShowUploadModal(true)}
+							className="flex items-center gap-2 text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-sm px-5 py-2.5"
+						>
+							<AiOutlineUpload size={18} />
+							Upload File
+						</button>
 					</div>
 				</header>
+
+				<div className="mb-4 flex flex-wrap gap-2">
+					<button
+						onClick={() => setSelectedFolder(null)}
+						className={`px-3 py-1 rounded-full text-sm font-medium ${selectedFolder === null
+							? "bg-indigo-600 text-white"
+							: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+							}`}
+					>
+						All
+					</button>
+
+					{folders.map((folder) => (
+						<button
+							key={folder}
+							onClick={() => setSelectedFolder(folder)}
+							className={`px-3 py-1 rounded-full text-sm font-medium ${selectedFolder === folder
+								? "bg-indigo-600 text-white"
+								: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+								}`}
+						>
+							{folder}
+						</button>
+					))}
+				</div>
+
 
 				{/* Candidate Table */}
 				<div className="bg-white p-6 rounded-xl shadow-md">
@@ -136,66 +172,74 @@ const Users = () => {
 									<th className="px-6 py-3 text-center">Name</th>
 									<th className="px-6 py-3 text-center">Phone Number</th>
 									<th className="px-6 py-3 text-center">Call Status</th>
+									<th className="px-6 py-3 text-center">Folder Name</th>
 									<th className="px-6 py-3 text-center">Scheduled At</th>
 									<th className="px-6 py-3 text-center">Actions</th>
 								</tr>
 							</thead>
 							<tbody>
-								{candidates.map((c) => (
-									<tr key={c.id} className="bg-white border-b hover:bg-gray-50">
-										<td className="w-4 p-4">
-											<input
-												type="checkbox"
-												checked={selectedIds.includes(c.id)}
-												onChange={() => handleCheckboxChange(c.id)}
-												className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded"
-											/>
-										</td>
-										<td className="px-6 py-4 font-medium text-gray-900 text-center">{c.name}</td>
-										<td className="px-6 py-4 text-center">{c.phone}</td>
-										<td className="px-6 py-4 text-center">
-											<span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-												{c.call_status}
-											</span>
-										</td>
-										<td className="px-6 py-4 text-center">
-											<span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
-												{c.schedule_time ? new Date(c.schedule_time).toLocaleString() : "Not Scheduled"}
-											</span>
-										</td>
-										<td className="px-6 py-4 flex gap-2 justify-center">
-											<button
-												className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 shadow-md"
-												onClick={() => openTranscript(c)}
-											>
-												<AiOutlineFileText size={20} />
-											</button>
+								{candidates
+									.filter((c) => !selectedFolder || c.folder_name === selectedFolder)
+									.map((c) => (
+										<tr key={c.id} className="bg-white border-b hover:bg-gray-50">
+											<td className="w-4 p-4">
+												<input
+													type="checkbox"
+													checked={selectedIds.includes(c.id)}
+													onChange={() => handleCheckboxChange(c.id)}
+													className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded"
+												/>
+											</td>
+											<td className="px-6 py-4 font-medium text-gray-900 text-center">{c.name}</td>
+											<td className="px-6 py-4 text-center">{c.phone}</td>
+											<td className="px-6 py-4 text-center">
+												<span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+													{c.call_status}
+												</span>
+											</td>
+											<td className="px-6 py-4 text-center">
+												<span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+													{c.folder_name}
+												</span>
+											</td>
+											<td className="px-6 py-4 text-center">
+												<span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+													{c.schedule_time ? new Date(c.schedule_time).toLocaleString() : "Not Scheduled"}
+												</span>
+											</td>
+											<td className="px-6 py-4 flex gap-2 justify-center">
+												<button
+													className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 shadow-md"
+													onClick={() => openTranscript(c)}
+												>
+													<AiOutlineFileText size={20} />
+												</button>
 
-											<button
-												className="w-12 h-12 flex items-center justify-center rounded-full bg-green-100 text-green-600 hover:bg-green-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
-												onClick={() => call(c)}
-												disabled={loading}
-											>
-												<FiPhone size={20} />
-											</button>
+												<button
+													className="w-12 h-12 flex items-center justify-center rounded-full bg-green-100 text-green-600 hover:bg-green-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+													onClick={() => call(c)}
+													disabled={loading}
+												>
+													<FiPhone size={20} />
+												</button>
 
-											<button
-												className="w-12 h-12 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 shadow-md"
-												onClick={() => openInstructions(c)}
-											>
-												<RiQuestionAnswerLine size={20} />
-											</button>
+												<button
+													className="w-12 h-12 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 shadow-md"
+													onClick={() => openInstructions(c)}
+												>
+													<RiQuestionAnswerLine size={20} />
+												</button>
 
-											<button
-												className="w-12 h-12 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 shadow-md"
-												onClick={() => setPromptModal(c)}
-											>
-												<AiOutlineEdit size={20} />
-											</button>
-										</td>
+												<button
+													className="w-12 h-12 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 shadow-md"
+													onClick={() => setPromptModal(c)}
+												>
+													<AiOutlineEdit size={20} />
+												</button>
+											</td>
 
-									</tr>
-								))}
+										</tr>
+									))}
 							</tbody>
 						</table>
 					</div>
@@ -209,6 +253,7 @@ const Users = () => {
 					setShowAddCandidateModal={setShowAddCandidateModal}
 					onClose={() => setShowAddCandidateModal(false)}
 					fetchUsers={fetchUsers}
+					folders={folders}
 				/>
 			)}
 
@@ -243,6 +288,9 @@ const Users = () => {
 
 			{promptModal && (
 				<UpdatePromptModal candidate={promptModal} onClose={() => setPromptModal(null)} fetchUsers={fetchUsers} />
+			)}
+			{showUploadModal && (
+				<UploadModal onClose={() => setShowUploadModal(null)} fetchUsers={fetchUsers} />
 			)}
 		</>
 	);
@@ -577,9 +625,11 @@ const ShowInstructionsModal = ({ candidate, onClose }) => (
 
 // ================== Add Candidate Modal ==================
 
-const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUsers }) => {
+const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUsers, folders }) => {
 	const [name, setName] = useState("");
 	const [phone, setPhone] = useState("");
+	const [selectedFolder, setSelectedFolder] = useState(""); // currently selected folder
+	const [newFolder, setNewFolder] = useState(""); // input for new folder
 	const [useDefault, setUseDefault] = useState(true);
 	const [instruction, setInstruction] = useState("");
 	const [custom_greet_instruction, setGreetingPrompt] = useState("");
@@ -588,17 +638,17 @@ const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUse
 	if (!isOpen) return null;
 
 	const onConfirm = async () => {
-
 		if (!name || !phone) {
 			toast.error("Name and Phone are required");
 			return;
 		}
 
-		// if (phone.length !== 10) {
-		// 	toast.error("Enter 10 digit valid phone number");
-		// 	return;
-		// }
+		if (!selectedFolder) {
+			toast.error("Please select a folder or enter a new one");
+			return;
+		}
 
+		const folderToSend = selectedFolder === "__new_folder__" ? newFolder : selectedFolder;
 
 		if (!useDefault && (!custom_greet_instruction.trim() || !custom_instruction.trim())) {
 			toast.error("Greeting and Custom Prompt are required when not using default");
@@ -609,31 +659,33 @@ const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUse
 			const result = await axios.post(URL + "/create-user", {
 				name,
 				phone,
+				folder_name: folderToSend,
 				use_default: useDefault,
 				instruction: instruction,
 				custom_greet_instruction: custom_greet_instruction,
 				custom_instruction: custom_instruction,
 			});
+
 			if (result.status === 201) {
 				await fetchUsers();
-				toast.success(`User Added`);
-			}
-			else {
+				toast.success("User added successfully");
+			} else {
 				toast.error("Unable to create the user");
 			}
+
 			setShowAddCandidateModal(false);
 		} catch (err) {
-			console.error("Error creating users:", err);
-			toast.error("Error creating users");
+			console.error("Error creating user:", err);
+			toast.error("Error creating user");
 		}
 	};
 
 	return (
 		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
 			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-				<h2 className="text-xl font-semibold mb-4 text-center">Add Candiadtes</h2>
+				<h2 className="text-xl font-semibold mb-4 text-center">Add Candidate</h2>
 
-				{/* Date */}
+				{/* Name */}
 				<div className="mb-4">
 					<label className="block text-sm font-medium mb-1">Name</label>
 					<input
@@ -644,17 +696,45 @@ const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUse
 					/>
 				</div>
 
-				{/* Time */}
+				{/* Phone */}
 				<div className="mb-4">
 					<label className="block text-sm font-medium mb-1">Phone</label>
 					<PhoneInput
 						defaultCountry="in"
 						value={phone}
-						onChange={(val) => setPhone(val)}
-						className=""
+						onChange={setPhone}
 						inputStyle={{ width: "100%" }}
 					/>
 				</div>
+
+				{/* Folder */}
+				<div className="mb-4">
+					<label className="block text-sm font-medium mb-1">Folder</label>
+					<select
+						value={selectedFolder}
+						onChange={(e) => setSelectedFolder(e.target.value)}
+						className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+					>
+						<option value="">-- Select Folder --</option>
+						{folders.map((f) => (
+							<option key={f} value={f}>{f}</option>
+						))}
+						<option value="__new_folder__">Add new folder...</option>
+					</select>
+				</div>
+
+				{/* New Folder Input */}
+				{selectedFolder === "__new_folder__" && (
+					<div className="mb-4">
+						<label className="block text-sm font-medium mb-1">New Folder Name</label>
+						<input
+							type="text"
+							value={newFolder}
+							onChange={(e) => setNewFolder(e.target.value)}
+							className="w-full border border-gray-300 rounded-md px-3 py-2 focus:outline-none focus:ring-2 focus:ring-indigo-500"
+						/>
+					</div>
+				)}
 
 				{/* Prompt Selection */}
 				<div className="mb-4">
@@ -669,20 +749,17 @@ const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUse
 					</label>
 				</div>
 
-				{/* Default Instruction */}
 				{useDefault && (
 					<div className="mb-4">
 						<label className="block text-sm font-medium mb-1">Instruction</label>
 						<textarea
 							value={instruction}
 							onChange={(e) => setInstruction(e.target.value)}
-							placeholder="Default AI conversation instruction"
 							className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
 						/>
 					</div>
 				)}
 
-				{/* Greeting + Custom */}
 				{!useDefault && (
 					<>
 						<div className="mb-4">
@@ -690,7 +767,6 @@ const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUse
 							<textarea
 								value={custom_greet_instruction}
 								onChange={(e) => setGreetingPrompt(e.target.value)}
-								placeholder="e.g., Hello! This is an AI call..."
 								className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
 							/>
 						</div>
@@ -699,15 +775,13 @@ const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUse
 							<textarea
 								value={custom_instruction}
 								onChange={(e) => setCustomPrompt(e.target.value)}
-								placeholder="e.g., Confirm the candidate’s availability..."
 								className="w-full border text-sm text-gray-900 border-gray-300 bg-gray-50 rounded-md px-3 py-2 h-20 resize-none focus:outline-none focus:ring-2 focus:ring-indigo-500"
 							/>
 						</div>
 					</>
 				)}
 
-				{/* Actions */}
-				<div className="flex justify-end space-x-2">
+				<div className="flex justify-end gap-2">
 					<button
 						onClick={onClose}
 						className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
@@ -718,13 +792,14 @@ const AddCandidateModal = ({ isOpen, onClose, setShowAddCandidateModal, fetchUse
 						onClick={onConfirm}
 						className="px-4 py-2 text-sm rounded-md bg-green-600 hover:bg-green-700 text-white"
 					>
-						Confirm & Schedule Calls
+						Confirm
 					</button>
 				</div>
 			</div>
 		</div>
 	);
 };
+
 
 // ================== Update Prompt Modal ==================
 const UpdatePromptModal = ({ candidate, onClose, fetchUsers }) => {
@@ -844,5 +919,151 @@ const UpdatePromptModal = ({ candidate, onClose, fetchUsers }) => {
 		</div>
 	);
 };
+
+
+const UploadModal = ({ onClose, fetchUsers }) => {
+	const [file, setFile] = useState(null);
+
+	// 📥 Handle file selection
+	const handleFileChange = (e) => {
+		setFile(e.target.files[0]);
+	};
+
+	// 📤 Handle file upload
+	const handleUpload = async () => {
+		if (!file) {
+			toast.error("Please select a file before uploading!");
+			return;
+		}
+
+		try {
+			const formData = new FormData();
+			formData.append("file", file);
+
+			const result = await axios.post(`${URL}/import-users/`, formData, {
+				headers: {
+					"Content-Type": "multipart/form-data",
+				},
+			});
+
+			if (result.status === 200) {
+				await fetchUsers();
+				toast.success("File uploaded successfully!");
+				onClose();
+			} else {
+				toast.error("Unable to upload file");
+			}
+		} catch (err) {
+			console.error("Error uploading file:", err);
+			toast.error("Failed to upload file");
+		}
+	};
+
+	// 📄 Handle sample file download
+	const handleDownloadSample = () => {
+		const sampleData = [
+			["name", "phone", "folder_name", "custom_instruction", "custom_greet_instruction"],
+			[
+				"Rahul",
+				"+918126578265",
+				"Python",
+				"You are an HR assistant. Ask about work experience and skills.",
+				"Hi John! Let's start your interview."
+			],
+			[
+				"Ram",
+				"+918126578265",
+				"Python",
+				"You are a recruiter. Ask candidate about previous projects.",
+				"Hi Jane! Good to meet you."
+			],
+			[
+				"Rohan",
+				"+918126578265",
+				"Python",
+				"You are a professional assistant. Collect candidate's job preferences.",
+				"Hello Robert! Let's get started."
+			]
+		];
+
+		const csvContent = sampleData.map((row) => row.join(",")).join("\n");
+		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+
+		// ✅ Use window.URL explicitly to avoid conflicts
+		const url = window.URL.createObjectURL(blob);
+
+		const link = document.createElement("a");
+		link.style.display = "none";
+		link.href = url;
+		link.download = "sample_users.csv";
+		document.body.appendChild(link);
+		link.click();
+
+		// Cleanup
+		window.URL.revokeObjectURL(url);
+		document.body.removeChild(link);
+	};
+
+
+	return (
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+				<h3 className="text-xl font-bold mb-4">Upload File</h3>
+
+				{/* Instructions */}
+				<div className="mb-4 text-sm text-gray-700">
+					<p className="font-medium mb-1">Please follow these guidelines:</p>
+					<ul className="list-disc list-inside space-y-1">
+						<li>All fields <strong>name, phone, folder_name, custom_instruction, custom_greet_instruction</strong> are mandatory.</li>
+						<li>Phone numbers must include their <strong>country code</strong>, e.g., +91, +1, etc.</li>
+						<li>Use CSV or XLSX file format only.</li>
+						<li>Ensure custom instructions do not contain line breaks or extra commas for CSV files.</li>
+					</ul>
+				</div>
+
+				{/* File Input */}
+				<div className="mb-4">
+					<label className="block text-sm font-medium mb-2">Select File</label>
+					<input
+						type="file"
+						accept=".csv,.xlsx"
+						onChange={handleFileChange}
+						className="block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none"
+					/>
+					<p className="text-xs text-gray-500 mt-1">
+						Supported formats: CSV, XLSX
+					</p>
+				</div>
+
+				{/* Download Sample Button */}
+				<div className="mb-4">
+					<button
+						onClick={handleDownloadSample}
+						className="px-3 py-2 text-sm rounded-md bg-blue-500 hover:bg-blue-600 text-white"
+					>
+						Download Sample File
+					</button>
+				</div>
+
+				{/* Action Buttons */}
+				<div className="flex justify-end gap-2">
+					<button
+						onClick={onClose}
+						className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+					>
+						Cancel
+					</button>
+					<button
+						onClick={handleUpload}
+						className="px-4 py-2 text-sm rounded-md bg-green-600 hover:bg-green-700 text-white"
+					>
+						Upload
+					</button>
+				</div>
+			</div>
+		</div>
+	);
+};
+
 
 export default Users;
