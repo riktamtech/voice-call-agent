@@ -940,7 +940,7 @@ const UploadModal = ({ onClose, fetchUsers }) => {
 			const formData = new FormData();
 			formData.append("file", file);
 
-			const result = await axios.post(`${URL}/import-users/`, formData, {
+			const result = await axios.post(`${URL}/import-users`, formData, {
 				headers: {
 					"Content-Type": "multipart/form-data",
 				},
