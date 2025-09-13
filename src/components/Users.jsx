@@ -10,6 +10,14 @@ import "react-phone-input-2/lib/style.css";
 import { toast } from "react-toastify";
 const URL = import.meta.env.VITE_API_URL;
 const Users = () => {
+
+	const statusClasses = {
+		completed: "bg-green-100 text-green-800",
+		pending: "bg-yellow-100 text-yellow-800",
+		busy: "bg-red-100 text-red-800",
+		failed: "bg-red-100 text-red-800",
+		"no-answer": "bg-red-100 text-red-800",
+	};
 	const [loading, setLoading] = useState(false);
 
 	const [showImmediateModal, setShowImmediateModal] = useState(false);
@@ -193,7 +201,10 @@ const Users = () => {
 											<td className="px-6 py-4 font-medium text-gray-900 text-center">{c.name}</td>
 											<td className="px-6 py-4 text-center">{c.phone}</td>
 											<td className="px-6 py-4 text-center">
-												<span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+												<span
+													className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${statusClasses[c.call_status] ?? "bg-gray-100 text-gray-800"
+														}`}
+												>
 													{c.call_status}
 												</span>
 											</td>
@@ -203,7 +214,10 @@ const Users = () => {
 												</span>
 											</td>
 											<td className="px-6 py-4 text-center">
-												<span className="bg-green-100 text-green-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+												<span
+													className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${c.schedule_time ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+														}`}
+												>
 													{c.schedule_time ? new Date(c.schedule_time).toLocaleString() : "Not Scheduled"}
 												</span>
 											</td>
@@ -568,10 +582,10 @@ const TranscriptModal = ({ candidate, onClose }) => (
 		<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg max-h-[80vh] overflow-y-auto">
 			<h3 className="text-xl font-bold mb-4">Transcript</h3>
 			<div className="text-gray-700 whitespace-pre-wrap">
-				{candidate.transcription.length === 0 ? (
+				{(candidate?.transcription ?? []).length === 0 ? (
 					<p>No transcription available.</p>
 				) : (
-					candidate.transcription.map((t, idx) => (
+					(candidate?.transcription ?? []).map((t, idx) => (
 						<p key={idx}>
 							<strong>{t.role === "assistant" ? "AI" : "Candidate"}:</strong> {t.content}
 						</p>
