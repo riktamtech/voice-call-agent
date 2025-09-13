@@ -129,16 +129,16 @@ const Users = () => {
 
 						{/* Navigation Links */}
 						<nav className="mt-8 flex flex-col space-y-2 w-full px-6">
-							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowAddCandidateModal(true)}>
 								Add Users
 							</button>
-							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowScheduleModal(true)}>
 								Schedule Calls
 							</button>
-							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowImmediateModal(true)}>
 								Place Immediate Calls
 							</button>
-							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowUploadModal(true)}>
 								Upload File
 							</button>
 						</nav>
@@ -153,18 +153,18 @@ const Users = () => {
 					Your AI Recruiter, On Call.
 				</p>
 				<nav className="mt-8 flex flex-col space-y-2 w-full px-6">
-					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
-						Add Users
-					</button>
-					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
-						Schedule Calls
-					</button>
-					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
-						Place Immediate Calls
-					</button>
-					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
-						Upload File
-					</button>
+					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowAddCandidateModal(true)}>
+								Add Users
+							</button>
+							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowScheduleModal(true)}>
+								Schedule Calls
+							</button>
+							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowImmediateModal(true)}>
+								Place Immediate Calls
+							</button>
+							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowUploadModal(true)}>
+								Upload File
+							</button>
 				</nav>
 			</aside>
 
