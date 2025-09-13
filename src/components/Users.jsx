@@ -3,14 +3,17 @@ import axios from "axios";
 import { AiOutlineFileText } from "react-icons/ai";
 import { FiPhone } from "react-icons/fi";
 import { RiQuestionAnswerLine } from "react-icons/ri";
-import { AiOutlineUserAdd, AiOutlineSchedule, AiOutlinePhone, AiOutlineEdit, AiOutlineUpload } from "react-icons/ai";
+import { AiOutlineUserAdd, AiOutlineSchedule, AiOutlinePhone, AiOutlineEdit, AiOutlineUpload, AiOutlineDelete } from "react-icons/ai";
 import PhoneInput from "react-phone-input-2";
 import "react-phone-input-2/lib/style.css";
+import { FiMenu, FiX } from "react-icons/fi";
+import { motion, AnimatePresence } from "framer-motion";
 
 import { toast } from "react-toastify";
 const URL = import.meta.env.VITE_API_URL;
-const Users = () => {
 
+const Users = () => {
+	const [sidebarOpen, setSidebarOpen] = useState(false);
 	const statusClasses = {
 		completed: "bg-green-100 text-green-800",
 		pending: "bg-yellow-100 text-yellow-800",
@@ -26,6 +29,7 @@ const Users = () => {
 	const [showUploadModal, setShowUploadModal] = useState(false);
 	const [selectedIds, setSelectedIds] = useState([]);
 	const [promptModal, setPromptModal] = useState(null);
+	const [deleteModal, setDeleteModal] = useState(null);
 
 	const [transcriptModal, setTranscriptModal] = useState(null);
 	const [instructionsModal, setInstructionsModal] = useState(null);
@@ -93,74 +97,108 @@ const Users = () => {
 
 	const openTranscript = (candidate) => setTranscriptModal(candidate);
 	const openInstructions = (candidate) => setInstructionsModal(candidate);
-
 	return (
-		<>
-			<div className="container mx-auto p-4 sm:p-6 lg:p-8">
-				<header className="mb-8 flex justify-between items-center">
-					<div>
-						<h1 className="text-3xl font-bold text-gray-900">
-							AI Candidate Screening via Voice Call
-						</h1>
-						<p className="text-gray-600 mt-1">
-							Select candidates, provide conversation instructions, and view call transcripts.
+		<div className="flex min-h-screen relative">
+			{/* Mobile Hamburger Button */}
+			<button
+				className="absolute top-4 left-4 z-50 md:hidden bg-white p-2 rounded-full shadow-md hover:bg-gray-100"
+				onClick={() => setSidebarOpen(!sidebarOpen)}
+			>
+				{sidebarOpen ? <FiX size={22} /> : <FiMenu size={22} />}
+			</button>
+
+			{/* Sidebar */}
+			<AnimatePresence>
+				{sidebarOpen && (
+					<motion.aside
+						initial={{ x: "-100%" }}
+						animate={{ x: 0 }}
+						exit={{ x: "-100%" }}
+						transition={{ duration: 0.3 }}
+						className="fixed top-0 left-0 w-64 h-full bg-white shadow-lg z-40 flex flex-col items-center py-6 space-y-4 md:static md:translate-x-0"
+					>
+						{/* Logo + Tagline */}
+						<img
+							src="/logo.png"
+							alt="Zcruit.ai Logo"
+							className="h-28 w-28 object-contain"
+						/>
+						<p className="text-gray-600 text-center text-sm px-4">
+							Your AI Recruiter, On Call.
 						</p>
-					</div>
-					<div className="flex space-x-2">
-						{/* Add Candidate */}
-						<button
-							onClick={() => setShowAddCandidateModal(true)}
-							className="flex items-center gap-2 text-white bg-purple-600 hover:bg-purple-700 font-medium rounded-lg text-sm px-5 py-2.5"
-						>
-							<AiOutlineUserAdd size={18} />
-							Add Candidate
-						</button>
 
-						{/* Schedule Calls */}
-						<button
-							onClick={() => setShowScheduleModal(true)}
-							className="flex items-center gap-2 text-white bg-green-600 hover:bg-green-700 font-medium rounded-lg text-sm px-5 py-2.5"
-						>
-							<AiOutlineSchedule size={18} />
-							Schedule Calls
-						</button>
+						{/* Navigation Links */}
+						<nav className="mt-8 flex flex-col space-y-2 w-full px-6">
+							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+								Add Users
+							</button>
+							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+								Schedule Calls
+							</button>
+							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+								Place Immediate Calls
+							</button>
+							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+								Upload File
+							</button>
+						</nav>
+					</motion.aside>
+				)}
+			</AnimatePresence>
 
-						{/* Place Immediate Calls */}
-						<button
-							onClick={() => setShowImmediateModal(true)}
-							className="flex items-center gap-2 text-white bg-blue-600 hover:bg-blue-700 font-medium rounded-lg text-sm px-5 py-2.5"
-						>
-							<AiOutlinePhone size={18} />
-							Place Immediate Calls
-						</button>
-						<button
-							onClick={() => setShowUploadModal(true)}
-							className="flex items-center gap-2 text-white bg-red-600 hover:bg-red-700 font-medium rounded-lg text-sm px-5 py-2.5"
-						>
-							<AiOutlineUpload size={18} />
-							Upload File
-						</button>
-					</div>
-				</header>
+			{/* Desktop Sidebar (Always Visible) */}
+			<aside className="hidden md:flex md:w-64 bg-white shadow-md flex-col items-center py-6 space-y-4">
+				<img src="/logo.png" alt="Zcruit.ai Logo" className="h-28 w-28 object-contain" />
+				<p className="text-gray-600 text-center text-sm px-4">
+					Your AI Recruiter, On Call.
+				</p>
+				<nav className="mt-8 flex flex-col space-y-2 w-full px-6">
+					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+						Add Users
+					</button>
+					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+						Schedule Calls
+					</button>
+					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+						Place Immediate Calls
+					</button>
+					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2">
+						Upload File
+					</button>
+				</nav>
+			</aside>
 
-				<div className="mb-4 flex flex-wrap gap-2">
+			{/* Main Content */}
+			<main className="flex-1 bg-gray-50 p-8">
+				<h2 className="text-3xl font-bold text-gray-800 mb-4">
+					Welcome to Zcruit.ai
+				</h2>
+				<p className="text-gray-700">
+					Your AI Recruiter, On Call. Manage candidates, schedule calls, and initiate conversations seamlessly.
+				</p>
+
+				<div className="mt-2 mb-6 flex flex-wrap gap-3 bg-white shadow-md rounded-xl p-4">
+					{/* "All" Button */}
 					<button
 						onClick={() => setSelectedFolder(null)}
-						className={`px-3 py-1 rounded-full text-sm font-medium ${selectedFolder === null
-							? "bg-indigo-600 text-white"
-							: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+						className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 shadow-sm
+      ${selectedFolder === null
+								? "bg-indigo-600 text-white shadow-md scale-105"
+								: "bg-gray-100 text-gray-700 hover:bg-gray-200"
 							}`}
 					>
 						All
 					</button>
 
+					{/* Folder Buttons */}
 					{folders.map((folder) => (
 						<button
 							key={folder}
 							onClick={() => setSelectedFolder(folder)}
-							className={`px-3 py-1 rounded-full text-sm font-medium ${selectedFolder === folder
-								? "bg-indigo-600 text-white"
-								: "bg-gray-200 text-gray-700 hover:bg-gray-300"
+							className={`px-4 py-2 rounded-full text-sm font-medium transition-all duration-200 shadow-sm
+        ${selectedFolder === folder
+									? "bg-indigo-600 text-white shadow-md scale-105"
+									: "bg-gray-100 text-gray-700 hover:bg-gray-200"
 								}`}
 						>
 							{folder}
@@ -170,11 +208,11 @@ const Users = () => {
 
 
 				{/* Candidate Table */}
-				<div className="bg-white p-6 rounded-xl shadow-md">
-					<h2 className="text-xl font-semibold mb-4">Candidates</h2>
-					<div className="overflow-x-auto">
-						<table className="w-full text-sm text-left text-gray-500">
-							<thead className="text-xs text-gray-700 uppercase bg-gray-50">
+				<div className="bg-white p-6 rounded-2xl shadow-lg">
+					<h2 className="text-2xl font-bold mb-6 text-gray-900">Candidates</h2>
+					<div className="overflow-x-auto rounded-xl border border-gray-100">
+						<table className="w-full text-sm text-left text-gray-600">
+							<thead className="text-xs uppercase bg-gray-50">
 								<tr>
 									<th className="p-4">Select</th>
 									<th className="px-6 py-3 text-center">Name</th>
@@ -188,125 +226,143 @@ const Users = () => {
 							<tbody>
 								{candidates
 									.filter((c) => !selectedFolder || c.folder_name === selectedFolder)
-									.map((c) => (
-										<tr key={c.id} className="bg-white border-b hover:bg-gray-50">
+									.map((c, idx) => (
+										<tr
+											key={c.id}
+											className={`border-b transition-colors duration-150 ${idx % 2 === 0 ? "bg-white" : "bg-gray-50"
+												} hover:bg-indigo-50`}
+										>
 											<td className="w-4 p-4">
 												<input
 													type="checkbox"
 													checked={selectedIds.includes(c.id)}
 													onChange={() => handleCheckboxChange(c.id)}
-													className="w-4 h-4 text-blue-600 bg-gray-100 border-gray-300 rounded"
+													className="w-4 h-4 text-indigo-600 border-gray-300 rounded focus:ring-indigo-500"
 												/>
 											</td>
 											<td className="px-6 py-4 font-medium text-gray-900 text-center">{c.name}</td>
 											<td className="px-6 py-4 text-center">{c.phone}</td>
 											<td className="px-6 py-4 text-center">
 												<span
-													className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${statusClasses[c.call_status] ?? "bg-gray-100 text-gray-800"
+													className={`text-xs font-bold px-3 py-1 rounded-full ${statusClasses[c.call_status] ?? "bg-gray-100 text-gray-800"
 														}`}
 												>
 													{c.call_status}
 												</span>
 											</td>
 											<td className="px-6 py-4 text-center">
-												<span className="bg-gray-100 text-gray-800 text-xs font-medium px-2.5 py-0.5 rounded-full">
+												<span className="bg-gray-100 text-gray-800 text-xs font-medium px-3 py-1 rounded-full">
 													{c.folder_name}
 												</span>
 											</td>
 											<td className="px-6 py-4 text-center">
 												<span
-													className={`text-xs font-bold px-2.5 py-0.5 rounded-full ${c.schedule_time ? "bg-green-100 text-green-800" : "bg-gray-100 text-gray-800"
+													className={`text-xs font-semibold px-3 py-1 rounded-full ${c.schedule_time
+														? "bg-green-100 text-green-800"
+														: "bg-gray-100 text-gray-800"
 														}`}
 												>
-													{c.schedule_time ? new Date(c.schedule_time).toLocaleString() : "Not Scheduled"}
+													{c.schedule_time
+														? new Date(c.schedule_time).toLocaleString()
+														: "Not Scheduled"}
 												</span>
 											</td>
-											<td className="px-6 py-4 flex gap-2 justify-center">
+											<td className="px-6 py-4 flex gap-3 justify-center">
 												<button
-													className="w-12 h-12 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 shadow-md"
+													className="w-10 h-10 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 shadow-sm hover:shadow transition"
 													onClick={() => openTranscript(c)}
 												>
-													<AiOutlineFileText size={20} />
+													<AiOutlineFileText size={18} />
 												</button>
 
 												<button
-													className="w-12 h-12 flex items-center justify-center rounded-full bg-green-100 text-green-600 hover:bg-green-200 shadow-md disabled:opacity-50 disabled:cursor-not-allowed"
+													className="w-10 h-10 flex items-center justify-center rounded-full bg-green-100 text-green-600 hover:bg-green-200 shadow-sm hover:shadow transition disabled:opacity-50 disabled:cursor-not-allowed"
 													onClick={() => call(c)}
 													disabled={loading}
 												>
-													<FiPhone size={20} />
+													<FiPhone size={18} />
 												</button>
 
 												<button
-													className="w-12 h-12 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 shadow-md"
+													className="w-10 h-10 flex items-center justify-center rounded-full bg-purple-100 text-purple-600 hover:bg-purple-200 shadow-sm hover:shadow transition"
 													onClick={() => openInstructions(c)}
 												>
-													<RiQuestionAnswerLine size={20} />
+													<RiQuestionAnswerLine size={18} />
 												</button>
 
 												<button
-													className="w-12 h-12 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 shadow-md"
+													className="w-10 h-10 flex items-center justify-center rounded-full bg-yellow-100 text-yellow-600 hover:bg-yellow-200 shadow-sm hover:shadow transition"
 													onClick={() => setPromptModal(c)}
 												>
-													<AiOutlineEdit size={20} />
+													<AiOutlineEdit size={18} />
+												</button>
+
+												<button
+													className="w-10 h-10 flex items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 shadow-sm hover:shadow transition"
+													onClick={() => setDeleteModal(c)}
+												>
+													<AiOutlineDelete size={18} />
 												</button>
 											</td>
-
 										</tr>
 									))}
 							</tbody>
 						</table>
 					</div>
 				</div>
-			</div>
 
-			{/* ================== Modals ================== */}
-			{showAddCandidateModal && (
-				<AddCandidateModal
-					isOpen={showAddCandidateModal}
-					setShowAddCandidateModal={setShowAddCandidateModal}
-					onClose={() => setShowAddCandidateModal(false)}
-					fetchUsers={fetchUsers}
-					folders={folders}
-				/>
-			)}
 
-			{transcriptModal && (
-				<TranscriptModal candidate={transcriptModal} onClose={() => setTranscriptModal(null)} />
-			)}
+				{showAddCandidateModal && (
+					<AddCandidateModal
+						isOpen={showAddCandidateModal}
+						setShowAddCandidateModal={setShowAddCandidateModal}
+						onClose={() => setShowAddCandidateModal(false)}
+						fetchUsers={fetchUsers}
+						folders={folders}
+					/>
+				)}
 
-			{instructionsModal && (
-				<ShowInstructionsModal
-					candidate={instructionsModal}
-					onClose={() => setInstructionsModal(null)}
-				/>
-			)}
+				{transcriptModal && (
+					<TranscriptModal candidate={transcriptModal} onClose={() => setTranscriptModal(null)} />
+				)}
 
-			{showScheduleModal && (
-				<ScheduleModal
-					isOpen={showScheduleModal}
-					selectedIds={selectedIds}
-					setShowScheduleModal={setShowScheduleModal}
-					onClose={() => setShowScheduleModal(false)}
-				/>
-			)}
+				{instructionsModal && (
+					<ShowInstructionsModal
+						candidate={instructionsModal}
+						onClose={() => setInstructionsModal(null)}
+					/>
+				)}
 
-			{showImmediateModal && (
-				<ImmediateModal
-					isOpen={showImmediateModal}
-					selectedIds={selectedIds}
-					setShowImmediateModal={setShowImmediateModal}
-					onClose={() => setShowImmediateModal(false)}
-				/>
-			)}
+				{showScheduleModal && (
+					<ScheduleModal
+						isOpen={showScheduleModal}
+						selectedIds={selectedIds}
+						setShowScheduleModal={setShowScheduleModal}
+						onClose={() => setShowScheduleModal(false)}
+					/>
+				)}
 
-			{promptModal && (
-				<UpdatePromptModal candidate={promptModal} onClose={() => setPromptModal(null)} fetchUsers={fetchUsers} />
-			)}
-			{showUploadModal && (
-				<UploadModal onClose={() => setShowUploadModal(null)} fetchUsers={fetchUsers} />
-			)}
-		</>
+				{showImmediateModal && (
+					<ImmediateModal
+						isOpen={showImmediateModal}
+						selectedIds={selectedIds}
+						setShowImmediateModal={setShowImmediateModal}
+						onClose={() => setShowImmediateModal(false)}
+					/>
+				)}
+
+				{promptModal && (
+					<UpdatePromptModal candidate={promptModal} onClose={() => setPromptModal(null)} fetchUsers={fetchUsers} />
+				)}
+				{showUploadModal && (
+					<UploadModal onClose={() => setShowUploadModal(null)} fetchUsers={fetchUsers} />
+				)}
+
+				{deleteModal && (
+					<DeleteUserModal candidate={deleteModal} onClose={() => setDeleteModal(null)} fetchUsers={fetchUsers} />
+				)}
+			</main>
+		</div>
 	);
 };
 
@@ -366,7 +422,7 @@ const ScheduleModal = ({ isOpen, onClose, selectedIds, setShowScheduleModal }) =
 	return (
 		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
 			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-				<h2 className="text-xl font-semibold mb-4 text-center">Schedule Screening Calls</h2>
+				<h2 className="text-xl font-semibold mb-4 text-center">Schedule Calls</h2>
 
 				{/* Date */}
 				<div className="mb-4">
@@ -504,7 +560,7 @@ const ImmediateModal = ({ isOpen, onClose, selectedIds, setShowImmediateModal })
 	return (
 		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
 			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-				<h2 className="text-xl font-semibold mb-4 text-center">Schedule Screening Calls</h2>
+				<h2 className="text-xl font-semibold mb-4 text-center">Place Calls</h2>
 
 				{/* Prompt Selection */}
 				<div className="mb-4">
@@ -926,7 +982,7 @@ const UpdatePromptModal = ({ candidate, onClose, fetchUsers }) => {
 						onClick={handleSave}
 						className="px-4 py-2 text-sm rounded-md bg-green-600 hover:bg-green-700 text-white"
 					>
-						Save
+						Update
 					</button>
 				</div>
 			</div>
@@ -935,12 +991,23 @@ const UpdatePromptModal = ({ candidate, onClose, fetchUsers }) => {
 };
 
 
+
 const UploadModal = ({ onClose, fetchUsers }) => {
 	const [file, setFile] = useState(null);
 
 	// 📥 Handle file selection
 	const handleFileChange = (e) => {
-		setFile(e.target.files[0]);
+		const selectedFile = e.target.files[0];
+		if (selectedFile) {
+			setFile(selectedFile);
+		}
+		// 🔑 Reset input so selecting the same file again works
+		e.target.value = "";
+	};
+
+	// 🗑️ Remove selected file
+	const handleRemoveFile = () => {
+		setFile(null);
 	};
 
 	// 📤 Handle file upload
@@ -1003,9 +1070,7 @@ const UploadModal = ({ onClose, fetchUsers }) => {
 		const csvContent = sampleData.map((row) => row.join(",")).join("\n");
 		const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
 
-		// ✅ Use window.URL explicitly to avoid conflicts
 		const url = window.URL.createObjectURL(blob);
-
 		const link = document.createElement("a");
 		link.style.display = "none";
 		link.href = url;
@@ -1013,16 +1078,14 @@ const UploadModal = ({ onClose, fetchUsers }) => {
 		document.body.appendChild(link);
 		link.click();
 
-		// Cleanup
 		window.URL.revokeObjectURL(url);
 		document.body.removeChild(link);
 	};
 
-
 	return (
-		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
-			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
-				<h3 className="text-xl font-bold mb-4">Upload File</h3>
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+			<div className="bg-white rounded-2xl shadow-xl p-6 w-full max-w-lg">
+				<h3 className="text-xl font-bold mb-4">Upload Users</h3>
 
 				{/* Instructions */}
 				<div className="mb-4 text-sm text-gray-700">
@@ -1037,20 +1100,69 @@ const UploadModal = ({ onClose, fetchUsers }) => {
 
 				{/* File Input */}
 				<div className="mb-4">
-					<label className="block text-sm font-medium mb-2">Select File</label>
-					<input
-						type="file"
-						accept=".csv,.xlsx"
-						onChange={handleFileChange}
-						className="block w-full text-sm text-gray-900 border border-gray-300 rounded-md cursor-pointer bg-gray-50 focus:outline-none"
-					/>
-					<p className="text-xs text-gray-500 mt-1">
-						Supported formats: CSV, XLSX
-					</p>
+					<label htmlFor="file-upload" className="block text-sm font-medium mb-2">
+						Select File
+					</label>
+
+					<label
+						htmlFor="file-upload"
+						className="flex flex-col items-center justify-center w-full p-6 border-2 border-dashed border-gray-300 rounded-2xl cursor-pointer bg-gray-50 hover:bg-gray-100 transition duration-200"
+					>
+						<svg
+							className="w-8 h-8 text-gray-400 mb-2"
+							fill="none"
+							stroke="currentColor"
+							viewBox="0 0 24 24"
+							xmlns="http://www.w3.org/2000/svg"
+						>
+							<path
+								strokeLinecap="round"
+								strokeLinejoin="round"
+								strokeWidth={2}
+								d="M7 16V4m0 0L3 8m4-4l4 4m6 8h-4a4 4 0 010-8h1m4 4h-4"
+							/>
+						</svg>
+						<span className="text-gray-600 text-sm font-medium">
+							Click to upload or drag and drop
+						</span>
+						<span className="text-xs text-gray-400 mt-1">
+							CSV or XLSX files only
+						</span>
+						<input
+							id="file-upload"
+							type="file"
+							accept=".csv,.xlsx"
+							onChange={handleFileChange}
+							className="hidden"
+						/>
+					</label>
+
+					{/* Show selected file */}
+					{file && (
+						<div className="mt-2 flex items-center justify-between bg-gray-100 rounded-lg px-3 py-2">
+							<p className="text-sm text-gray-700 truncate">{file.name}</p>
+							<button
+								onClick={handleRemoveFile}
+								className="text-gray-500 hover:text-red-500"
+								aria-label="Remove file"
+							>
+								<svg
+									xmlns="http://www.w3.org/2000/svg"
+									className="w-4 h-4"
+									fill="none"
+									viewBox="0 0 24 24"
+									stroke="currentColor"
+									strokeWidth={2}
+								>
+									<path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+								</svg>
+							</button>
+						</div>
+					)}
 				</div>
 
 				{/* Download Sample Button */}
-				<div className="mb-4">
+				<div className="flex justify-center mb-4">
 					<button
 						onClick={handleDownloadSample}
 						className="px-3 py-2 text-sm rounded-md bg-blue-500 hover:bg-blue-600 text-white"
@@ -1079,5 +1191,55 @@ const UploadModal = ({ onClose, fetchUsers }) => {
 	);
 };
 
+
+
+
+
+const DeleteUserModal = ({ candidate, onClose, fetchUsers }) => {
+
+	const handleDelete = async () => {
+		try {
+
+			const result = await axios.delete(`${URL}/delete-user/${candidate.id}`);
+
+			if (result.status === 200) {
+				await fetchUsers();
+				toast.success(`User Deleted`);
+			}
+			else {
+				toast.error("Unable to delete the user");
+			}
+			onClose();
+		} catch (err) {
+			console.error("Error deleting user:", err);
+			toast.error("Failed to deleting user");
+		}
+	};
+
+
+	return (
+		<div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center">
+			<div className="bg-white rounded-lg shadow-lg p-6 w-full max-w-lg">
+				<h3 className="text-xl font-bold mb-4">Delete User</h3>
+				<p className="mb-4">Are you sure you want to delete the user <strong>{candidate?.name}</strong>? This action cannot be undone.</p>
+
+				<div className="flex justify-end gap-2">
+					<button
+						onClick={onClose}
+						className="px-4 py-2 rounded-md bg-gray-200 hover:bg-gray-300 text-gray-700"
+					>
+						Cancel
+					</button>
+					<button
+						onClick={handleDelete}
+						className="px-4 py-2 text-sm rounded-md bg-red-600 hover:bg-red-700 text-white"
+					>
+						Delete
+					</button>
+				</div>
+			</div>
+		</div>
+	);
+};
 
 export default Users;
