@@ -74,7 +74,7 @@ const Users = () => {
     const handleSaveUser = async (formData) => {
         try {
             if (isEditMode) {
-                await axios.post(`${URL}/user/update/`, formData);
+                await axios.post(`${URL}/user/update`, formData);
             } else {
                 await axios.post(`${URL}/user/create`, formData);
             }
