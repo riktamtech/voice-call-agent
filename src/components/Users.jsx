@@ -42,9 +42,9 @@ const Users = () => {
 	// Fetch candidates
 	const fetchUsers = async () => {
 		try {
-			let route = URL + "/users";
+			let route = URL + "/users/all";
 			const res = await axios.get(route);
-			const users = res.data.map((u) => ({
+			const users = res.data.data.map((u) => ({
 				id: u.user_id,
 				name: u.name,
 				phone: u.phone,
@@ -154,17 +154,17 @@ const Users = () => {
 				</p>
 				<nav className="mt-8 flex flex-col space-y-2 w-full px-6">
 					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowAddCandidateModal(true)}>
-								Add Users
-							</button>
-							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowScheduleModal(true)}>
-								Schedule Calls
-							</button>
-							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowImmediateModal(true)}>
-								Place Immediate Calls
-							</button>
-							<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowUploadModal(true)}>
-								Upload File
-							</button>
+						Add Users
+					</button>
+					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowScheduleModal(true)}>
+						Schedule Calls
+					</button>
+					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowImmediateModal(true)}>
+						Place Immediate Calls
+					</button>
+					<button className="text-gray-700 hover:bg-gray-100 rounded-lg px-3 py-2" onClick={() => setShowUploadModal(true)}>
+						Upload File
+					</button>
 				</nav>
 			</aside>
 
