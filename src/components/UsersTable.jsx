@@ -62,7 +62,7 @@ const UsersTable = ({ users, onViewInstructions, onEdit, onDelete, onSelectionCh
     const callUser = async (user) => {
         try {
             console.log("Calling user:", user.user_id);
-            const result = await axios.post(`${URL}/call/start-call/`, { user_id: user.user_id });
+            const result = await axios.post(`${URL}/call/start-call`, { user_id: user.user_id });
             toast.success(`Call initated successfully to ${user.name}!`);
         } catch (error) {
             console.error("Error placing call:", error);
