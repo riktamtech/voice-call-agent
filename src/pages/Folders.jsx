@@ -5,10 +5,12 @@ import FoldersTable from "../components/FoldersTable";
 import FolderModal from "../components/FolderModal";
 import FolderFormModal from "../components/FolderFormModal";
 import DeleteFolderModal from "../components/DeleteFolderModal";
+import Loader from "../components/Loader";
 
 
 const Folders = () => {
   const URL = import.meta.env.VITE_API_URL;
+  const [loading, setLoading] = useState(true);
   const [folders, setFolders] = useState([]);
   const [selectedFolder, setSelectedFolder] = useState(null);
 
@@ -20,10 +22,13 @@ const Folders = () => {
   // Fetch Folders
   const fetchFolders = async () => {
     try {
+      setLoading(true);
       const res = await axios.get(`${URL}/folder/all`);
       setFolders(res.data.data.folders);
+      setLoading(false);
     } catch (error) {
       console.error("Error fetching folders:", error);
+      setLoading(false);
     }
   };
 
@@ -72,8 +77,8 @@ const Folders = () => {
           Add
         </button>
       </div>
-
-      <FoldersTable
+      <Loader loading={loading} />
+      {!loading && <FoldersTable
         folders={folders}
         onViewInstructions={(folder) => {
           setSelectedFolder(folder);
@@ -88,7 +93,8 @@ const Folders = () => {
           setSelectedFolder(folder);
           setShowDeleteModal(true);
         }}
-      />
+      />}
+
 
       {/* View Folder Modal */}
       {showViewModal && selectedFolder && (
