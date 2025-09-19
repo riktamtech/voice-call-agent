@@ -68,7 +68,16 @@ const Users = () => {
     };
 
     useEffect(() => {
+        // Call immediately on mount
         fetchData();
+
+        // Set up interval to call every 10 seconds
+        const interval = setInterval(() => {
+            fetchData();
+        }, 10000); // 10 sec = 10000 ms
+
+        // Cleanup on unmount
+        return () => clearInterval(interval);
     }, []);
 
     const handleSaveUser = async (formData) => {

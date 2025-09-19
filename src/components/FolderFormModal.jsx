@@ -3,14 +3,12 @@ import React, { useState, useEffect } from "react";
 const voiceModels = [
   "aura-2-thalia-en",
   "aura-2-apollo-en",
-  "aura-2-aria-en",
 ];
 
 const llmModels = [
   "gpt-4o-mini",
   "gpt-4.1",
   "gpt-4o",
-  "gpt-4-turbo",
 ];
 
 const FolderFormModal = ({ folder, onClose, onSave }) => {
