@@ -30,26 +30,17 @@ const Users = () => {
     const [showUploadModal, setShowUploadModal] = useState(false);
 
     // Fetch everything once
+    // ✅ Only fetch raw users + folders
     const fetchData = async () => {
         try {
-            setLoading(true)
+            setLoading(true);
             const [usersRes, foldersRes] = await Promise.all([
                 axios.get(`${URL}/user/all`),
                 axios.get(`${URL}/folder/all`),
             ]);
 
-            const users = usersRes.data.data.users;
-            const folders = foldersRes.data.data.folders;
-
-            setAllUsers(users);
-            setFolders(folders);
-
-            // 🔑 Reapply filter after updating allUsers
-            if (selectedFolderId) {
-                setFilteredUsers(users.filter((u) => u.folder_id === selectedFolderId));
-            } else {
-                setFilteredUsers(users);
-            }
+            setAllUsers(usersRes.data.data.users);
+            setFolders(foldersRes.data.data.folders);
             setLoading(false);
         } catch (error) {
             setLoading(false);
@@ -57,15 +48,22 @@ const Users = () => {
         }
     };
 
-
-    const filterUsers = (folderId = "") => {
-        setSelectedFolderId(folderId);
-        if (!folderId) {
-            setFilteredUsers(allUsers);
+    // ✅ React to selectedFolderId or allUsers change
+    useEffect(() => {
+        if (selectedFolderId) {
+            setFilteredUsers(allUsers.filter((u) => u.folder_id === selectedFolderId));
         } else {
-            setFilteredUsers(allUsers.filter((u) => u.folder_id === folderId));
+            setFilteredUsers(allUsers);
         }
-    };
+    }, [allUsers, selectedFolderId]); // runs automatically when either changes
+
+    // ✅ Fetch on mount + refresh every 10s
+    useEffect(() => {
+        fetchData();
+        const interval = setInterval(fetchData, 10000);
+        return () => clearInterval(interval);
+    }, []);
+
 
     useEffect(() => {
         // Call immediately on mount
