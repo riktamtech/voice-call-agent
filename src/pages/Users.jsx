@@ -30,7 +30,7 @@ const Users = () => {
     const [showUploadModal, setShowUploadModal] = useState(false);
 
     // Fetch everything once
-    // ✅ Only fetch raw users + folders
+    // ✅ Keep your fetchData as is, but remove filtering inside it
     const fetchData = async () => {
         try {
             setLoading(true);
@@ -39,8 +39,11 @@ const Users = () => {
                 axios.get(`${URL}/folder/all`),
             ]);
 
-            setAllUsers(usersRes.data.data.users);
-            setFolders(foldersRes.data.data.folders);
+            const users = usersRes.data.data.users;
+            const folders = foldersRes.data.data.folders;
+
+            setAllUsers(users);
+            setFolders(folders);
             setLoading(false);
         } catch (error) {
             setLoading(false);
@@ -48,21 +51,26 @@ const Users = () => {
         }
     };
 
-    // ✅ React to selectedFolderId or allUsers change
+    // ✅ This will re-filter automatically when data OR selected folder changes
     useEffect(() => {
         if (selectedFolderId) {
             setFilteredUsers(allUsers.filter((u) => u.folder_id === selectedFolderId));
         } else {
             setFilteredUsers(allUsers);
         }
-    }, [allUsers, selectedFolderId]); // runs automatically when either changes
+    }, [allUsers, selectedFolderId]);
 
-    // ✅ Fetch on mount + refresh every 10s
+    // ✅ Fetch data initially + every 10 sec
     useEffect(() => {
         fetchData();
         const interval = setInterval(fetchData, 10000);
         return () => clearInterval(interval);
     }, []);
+
+    // ✅ Keep your filterUsers exactly as it is
+    const filterUsers = (folderId = "") => {
+        setSelectedFolderId(folderId);
+    };
 
 
     useEffect(() => {
