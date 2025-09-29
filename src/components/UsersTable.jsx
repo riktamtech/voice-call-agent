@@ -4,6 +4,8 @@ import {
     AiOutlineDelete,
     AiOutlineFileText,
     AiOutlinePhone,
+    AiOutlineAudio,
+    AiOutlineAudioMuted,
 } from "react-icons/ai";
 import { toast } from "react-toastify";
 
@@ -20,6 +22,8 @@ const URL = import.meta.env.VITE_API_URL;
 const UsersTable = ({ users, onViewInstructions, onEdit, onDelete, onSelectionChange }) => {
     const [selectedUserIds, setSelectedUserIds] = useState([]);
     const [selectAll, setSelectAll] = useState(false);
+
+    const [audioModal, setAudioModal] = useState({ open: false, url: "" });
 
     // Handle single checkbox toggle
     const handleCheckboxChange = (userId) => {
@@ -57,7 +61,7 @@ const UsersTable = ({ users, onViewInstructions, onEdit, onDelete, onSelectionCh
             setSelectAll(false);
         }
     }, [selectedUserIds, users]);
-    
+
 
     const callUser = async (user) => {
         try {
@@ -66,7 +70,7 @@ const UsersTable = ({ users, onViewInstructions, onEdit, onDelete, onSelectionCh
             toast.success(`Call initated successfully to ${user.name}!`);
         } catch (error) {
             console.error("Error placing call:", error);
-			toast.error("Failed to place call. Please try again.");
+            toast.error("Failed to place call. Please try again.");
         }
     };
 
@@ -160,12 +164,23 @@ const UsersTable = ({ users, onViewInstructions, onEdit, onDelete, onSelectionCh
                                     >
                                         <AiOutlineEdit size={16} />
                                     </button>
-                                    <button
-                                        className="w-9 h-9 flex items-center justify-center rounded-full bg-red-100 text-red-600 hover:bg-red-200 transition"
-                                        onClick={() => onDelete(user)}
-                                    >
-                                        <AiOutlineDelete size={16} />
-                                    </button>
+                                    {user.recording_url ? (
+                                        <button
+                                            className="w-9 h-9 flex items-center justify-center rounded-full bg-blue-100 text-blue-600 hover:bg-blue-200 transition"
+                                            onClick={() => setAudioModal({ open: true, url: user.recording_url })}
+                                        >
+                                            <AiOutlineAudio size={16} />
+                                        </button>
+                                    ) : (
+                                        <button
+                                            className="w-9 h-9 flex items-center justify-center rounded-full bg-gray-100 text-gray-400 cursor-not-allowed"
+                                            disabled
+                                        >
+                                            <AiOutlineAudioMuted size={16} />
+                                        </button>
+                                    )}
+
+
                                 </td>
                             </tr>
                         ))
@@ -181,6 +196,26 @@ const UsersTable = ({ users, onViewInstructions, onEdit, onDelete, onSelectionCh
                     )}
                 </tbody>
             </table>
+            {audioModal.open && (
+                <div className="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+                    <div className="bg-white rounded-xl shadow-lg p-6 w-96">
+                        <h3 className="text-lg font-semibold mb-4">Recording</h3>
+                        <audio src={audioModal.url} controls autoPlay className="w-full mb-6" />
+
+                        {/* Footer Buttons - aligned bottom right */}
+                        <div className="flex justify-end space-x-3">
+                            <button
+                                className="px-4 py-2 rounded-lg bg-red-600 text-white hover:bg-red-700 transition"
+                                onClick={() => setAudioModal({ open: false, url: "" })}
+                            >
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            )}
+
+
         </div>
     );
 };

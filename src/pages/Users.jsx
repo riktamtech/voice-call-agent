@@ -9,6 +9,9 @@ import UserFormModal from "../components/UserFormModal";
 import UploadModal from "../components/UploadModal";
 import Loader from "../components/Loader";
 import { toast } from "react-toastify";
+import {
+    AiOutlineReload,
+} from "react-icons/ai";
 
 const Users = () => {
     const URL = import.meta.env.VITE_API_URL;
@@ -63,8 +66,8 @@ const Users = () => {
     // ✅ Fetch data initially + every 10 sec
     useEffect(() => {
         fetchData();
-        const interval = setInterval(fetchData, 10000);
-        return () => clearInterval(interval);
+        // const interval = setInterval(fetchData, 10000);
+        // return () => clearInterval(interval);
     }, []);
 
     // ✅ Keep your filterUsers exactly as it is
@@ -72,19 +75,6 @@ const Users = () => {
         setSelectedFolderId(folderId);
     };
 
-
-    useEffect(() => {
-        // Call immediately on mount
-        fetchData();
-
-        // Set up interval to call every 10 seconds
-        const interval = setInterval(() => {
-            fetchData();
-        }, 10000); // 10 sec = 10000 ms
-
-        // Cleanup on unmount
-        return () => clearInterval(interval);
-    }, []);
 
     const handleSaveUser = async (formData) => {
         try {
@@ -175,6 +165,12 @@ const Users = () => {
                             onClick={() => setShowUploadModal(true)}
                         >
                             Upload
+                        </button>
+                        <button
+                            className="px-4 py-2 rounded-xl border border-gray-500 text-gray-600 hover:bg-gray-100 transition flex items-center gap-2"
+                            onClick={fetchData}
+                        >
+                            <AiOutlineReload size={16} />
                         </button>
                     </div>
                 </div>
